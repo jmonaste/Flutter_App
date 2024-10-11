@@ -45,8 +45,8 @@ Future<void> _login() async {
       body: 'grant_type=password&username=$username&password=$password&scope=&client_id=&client_secret=',
     );
 
-    print('Response status: ${response.statusCode}');
-    print('Response body: ${response.body}');
+    //print('Response status: ${response.statusCode}');
+    //print('Response body: ${response.body}');
 
     setState(() {
       _isLoading = false;
@@ -57,8 +57,8 @@ Future<void> _login() async {
       final token = data['access_token'];
       final tokenType = data['token_type'];
 
-      print('Token: $token');
-      print('Token type: $tokenType');
+      //print('Token: $token');
+      //print('Token type: $tokenType');
 
       // Navegar a la página de inicio si el login es exitoso
       Navigator.pushReplacement(

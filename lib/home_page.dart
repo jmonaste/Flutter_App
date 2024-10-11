@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'manage_vehicle_type.dart'; // Importa la nueva pantalla
+import 'vehicle_type_list.dart'; // Importa la página donde listarás los tipos de vehículos
 
 class HomePage extends StatelessWidget {
   final String token;
@@ -25,10 +25,11 @@ class HomePage extends StatelessWidget {
                 ),
               ),
               onPressed: () {
+                // Llama directamente al fetch para cargar los tipos de vehículos
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ManageVehicleTypePage(token: token), // Llama a ManageVehicleTypePage
+                    builder: (context) => VehicleTypeListPage(token: token),
                   ),
                 );
               },
