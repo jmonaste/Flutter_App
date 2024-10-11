@@ -88,6 +88,28 @@ class _VehicleTypeListPageState extends State<VehicleTypeListPage> {
     }
   }
 
+  Future<void> _deleteVehicleType(int id) async {
+    final response = await http.delete(
+      Uri.parse('http://192.168.1.45:8000/api/vehicle-types/$id'),
+      headers: <String, String>{
+        'Authorization': 'Bearer ${widget.token}',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      // Muestra un mensaje de éxito
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Eliminación exitosa')),
+      );
+      _fetchVehicleTypes(); // Actualizar la lista después de la eliminación
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al eliminar el tipo de vehículo')),
+      );
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -141,7 +163,7 @@ class _VehicleTypeListPageState extends State<VehicleTypeListPage> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                // Lógica para eliminar el tipo de vehículo (puedes implementarla después)
+                _showDeleteDialog(id, typeName); // Lógica para eliminar el tipo de vehículo (puedes implementarla después)
               },
               child: Text('Eliminar'),
             ),
@@ -183,4 +205,34 @@ class _VehicleTypeListPageState extends State<VehicleTypeListPage> {
       },
     );
   }
+
+  void _showDeleteDialog(int id, String typeName) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Eliminar Tipo de Vehículo'),
+          content: Text('¿Estás seguro de que deseas eliminar "$typeName"?'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancelar'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Cierra el diálogo
+              },
+            ),
+            TextButton(
+              child: Text('Eliminar'),
+              onPressed: () async {
+                Navigator.of(context).pop(); // Cierra el diálogo
+                await _deleteVehicleType(id); // Llama a la función para eliminar el tipo
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+
 }
