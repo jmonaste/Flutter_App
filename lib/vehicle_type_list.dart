@@ -109,6 +109,31 @@ class _VehicleTypeListPageState extends State<VehicleTypeListPage> {
     }
   }
 
+  Future<void> _addVehicleType(String typeName) async {
+    final response = await http.post(
+      Uri.parse('http://192.168.1.45:8000/api/vehicle-types'),
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${widget.token}',
+      },
+      body: jsonEncode(<String, String>{
+        'type_name': typeName,
+      }),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      // Muestra un mensaje de éxito
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Tipo de vehículo añadido exitosamente')),
+      );
+      _fetchVehicleTypes(); // Actualiza la lista de tipos después de añadir
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al añadir el tipo de vehículo')),
+      );
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +163,7 @@ class _VehicleTypeListPageState extends State<VehicleTypeListPage> {
                 ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Acción para añadir un nuevo tipo de vehículo
+          _showAddDialog();  // Llamamos a _showAddDialog cuando se presiona el botón
         },
         child: Icon(Icons.add),
         tooltip: 'Añadir nuevo tipo de vehículo',
@@ -233,6 +258,44 @@ class _VehicleTypeListPageState extends State<VehicleTypeListPage> {
     );
   }
 
+  void _showAddDialog() {
+    TextEditingController typeNameController = TextEditingController();
 
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Añadir Nuevo Tipo de Vehículo'),
+          content: TextField(
+            controller: typeNameController,
+            decoration: InputDecoration(hintText: 'Nombre del tipo de vehículo'),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancelar'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Cierra el diálogo
+              },
+            ),
+            TextButton(
+              child: Text('Añadir'),
+              onPressed: () async {
+                String typeName = typeNameController.text.trim();
+                if (typeName.isNotEmpty) {
+                  Navigator.of(context).pop(); // Cierra el diálogo
+                  await _addVehicleType(typeName); // Llama a la función para añadir el tipo
+                } else {
+                  // Muestra un mensaje de error si el campo está vacío
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('El nombre del tipo de vehículo no puede estar vacío')),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  } 
 
 }
