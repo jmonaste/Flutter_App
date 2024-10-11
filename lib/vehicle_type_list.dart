@@ -147,26 +147,31 @@ class _VehicleTypeListPageState extends State<VehicleTypeListPage> {
           : errorMessage.isNotEmpty
               ? Center(child: Text(errorMessage, style: TextStyle(color: Colors.red)))
               : ListView.builder(
-                  itemCount: vehicleTypes.length,
-                  itemBuilder: (context, index) {
-                    final vehicleType = vehicleTypes[index];
-                    return Card(
-                      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: ListTile(
-                        title: Text(vehicleType['type_name']),
-                        onTap: () {
-                          _showOptionsDialog(vehicleType['id'], vehicleType['type_name']);
-                        },
+                itemCount: vehicleTypes.length,
+                itemBuilder: (context, index) {
+                  final vehicleType = vehicleTypes[index];
+                  return Card(
+                    margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: ListTile(
+                      title: Align(
+                        alignment: Alignment.center,  // Centramos el texto dentro del ListTile
+                        child: Text(vehicleType['type_name']),
                       ),
-                    );
-                  },
-                ),
+                      onTap: () {
+                        _showOptionsDialog(vehicleType['id'], vehicleType['type_name']);
+                      },
+                    ),
+                  );
+                },
+              ),
+
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _showAddDialog();  // Llamamos a _showAddDialog cuando se presiona el botón
         },
-        child: Icon(Icons.add),
+        
         tooltip: 'Añadir nuevo tipo de vehículo',
+        child: Icon(Icons.add),
       ),
     );
   }
