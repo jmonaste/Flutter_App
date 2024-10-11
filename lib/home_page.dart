@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'create_vehicle_type.dart'; // Importa la nueva pantalla
+import 'manage_vehicle_type.dart'; // Importa la nueva pantalla
 
 class HomePage extends StatelessWidget {
   final String token;
@@ -14,22 +14,66 @@ class HomePage extends StatelessWidget {
         centerTitle: true,
       ),
       body: Center(
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => CreateVehicleTypePage(token: token),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-            );
-          },
-          child: Text('Dar de alta un tipo de vehículo'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ManageVehicleTypePage(token: token), // Llama a ManageVehicleTypePage
+                  ),
+                );
+              },
+              child: Text('Gestionar tipos de vehículos'),
+            ),
+            SizedBox(height: 20), // Añadido para espaciado
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                // Acción para gestionar marcas
+              },
+              child: Text('Gestionar marcas'),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                // Acción para gestionar modelos
+              },
+              child: Text('Gestionar modelos'),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                // Acción para gestionar vehículos
+              },
+              child: Text('Gestionar vehículos'),
+            ),
+          ],
         ),
       ),
     );
