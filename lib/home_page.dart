@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'vehicle_type_list.dart'; // Importa la página donde listarás los tipos de vehículos
+import 'camera_page.dart'; // Importa la página de la cámara
 
 class HomePage extends StatelessWidget {
   final String token;
@@ -73,6 +74,25 @@ class HomePage extends StatelessWidget {
                 // Acción para gestionar vehículos
               },
               child: Text('Gestionar vehículos'),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                // Navega a la página para añadir un nuevo vehículo (usar la cámara)
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CameraPage(),
+                  ),
+                );
+              },
+              child: Text('Añadir nuevo vehículo'),
             ),
           ],
         ),
