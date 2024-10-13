@@ -17,12 +17,11 @@ class CameraPage extends StatefulWidget {
 
 class _CameraPageState extends State<CameraPage> {
   File? _imageFile;
-  Uint8List? _webImage;  // Para almacenar la imagen en Flutter Web
-  String? _vin;   // Variable para almacenar el VIN seleccionado
-  List<Map<String, dynamic>> detectedCodes = [];  // Cambiar el tipo a List<Map<String, dynamic>>
+  Uint8List? _webImage;
+  String? _vin;
+  List<Map<String, dynamic>> detectedCodes = [];
   final picker = ImagePicker();
 
-  // Método para seleccionar una imagen desde la cámara y subirla automáticamente
   Future<void> _scanQRorBarcode() async {
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
 
@@ -31,11 +30,11 @@ class _CameraPageState extends State<CameraPage> {
         if (kIsWeb) {
           pickedFile.readAsBytes().then((bytes) {
             _webImage = bytes;
-            _uploadImage(); // Subir automáticamente después de seleccionar la imagen
+            _uploadImage();
           });
         } else {
           _imageFile = File(pickedFile.path);
-          _uploadImage(); // Subir automáticamente después de seleccionar la imagen
+          _uploadImage();
         }
       });
     } else {
@@ -43,7 +42,6 @@ class _CameraPageState extends State<CameraPage> {
     }
   }
 
-  // Método para subir la imagen a la API
   Future<void> _uploadImage() async {
     if (_imageFile == null && _webImage == null) {
       print('No image selected.');
@@ -53,33 +51,29 @@ class _CameraPageState extends State<CameraPage> {
     var uri = Uri.parse('http://192.168.1.45:8000/scan');
     var request = http.MultipartRequest('POST', uri);
 
-    // Enviar el archivo con el tipo MIME correcto
     if (kIsWeb) {
       request.files.add(http.MultipartFile.fromBytes(
         'file',
         _webImage!,
         filename: 'qr_sample.jpeg',
-        contentType: MediaType('image', 'jpeg'), // Especificar el tipo MIME manualmente
+        contentType: MediaType('image', 'jpeg'),
       ));
     } else {
       request.files.add(await http.MultipartFile.fromPath(
         'file',
         _imageFile!.path,
-        contentType: MediaType('image', 'jpeg'), // Especificar el tipo MIME manualmente
+        contentType: MediaType('image', 'jpeg'),
       ));
     }
 
-    // Añadir el encabezado Authorization con el token
-    request.headers['Authorization'] = 'Bearer ${widget.token}';  // Usar el token recibido
+    request.headers['Authorization'] = 'Bearer ${widget.token}';
 
-    // Enviar la solicitud y obtener la respuesta
     var streamedResponse = await request.send();
     var response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode == 200) {
       var decodedResponse = jsonDecode(response.body);
       setState(() {
-        // Extraer los códigos detectados
         List<dynamic> detectedCodesJson = decodedResponse['detected_codes'];
         detectedCodes = detectedCodesJson.map((code) {
           return {
@@ -87,19 +81,46 @@ class _CameraPageState extends State<CameraPage> {
             'data': code['data'],
           };
         }).toList();
-        
-        // Mostrar los códigos detectados en el modal
+
         _showDetectedCodesDialog();
       });
-    } else {
+    } else if (response.statusCode == 400) {
+      var decodedResponse = jsonDecode(response.body);
       setState(() {
         detectedCodes = [];
-        print('Error al subir la imagen. Código de estado: ${response.statusCode}');
+        if (decodedResponse['error'] == 'No QR or Barcode detected') {
+          _showErrorDialog('No se detectaron códigos QR o de barras. Introduzca el VIN manualmente.');
+        } else if (decodedResponse['detail'] == 'Unsupported file type') {
+          _showErrorDialog('El tipo de archivo no es compatible.');
+        }
       });
+    } else {
+      print('Error al subir la imagen. Código de estado: ${response.statusCode}');
     }
   }
 
-  // Método para mostrar el modal con los códigos detectados y permitir que el usuario elija uno
+  // Método para mostrar el diálogo de error
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Error'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Aceptar'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Método para mostrar los códigos detectados y permitir que el usuario elija uno
   void _showDetectedCodesDialog() {
     showDialog(
       context: context,
@@ -107,7 +128,14 @@ class _CameraPageState extends State<CameraPage> {
         return AlertDialog(
           title: Text('Selecciona un código'),
           content: detectedCodes.isEmpty
-              ? Text('No se detectaron códigos')
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('No se detectó ningún código VIN.'),
+                    SizedBox(height: 10),
+                    Text('Por favor, introduzca el VIN manualmente.'),
+                  ],
+                )
               : Column(
                   mainAxisSize: MainAxisSize.min,
                   children: detectedCodes.map((code) {
@@ -125,6 +153,14 @@ class _CameraPageState extends State<CameraPage> {
                   }).toList(),
                 ),
           actions: <Widget>[
+            if (detectedCodes.isEmpty)
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _showSelectedVinDialog();
+                },
+                child: Text('Introducir VIN manualmente'),
+              ),
             TextButton(
               child: Text('Cerrar'),
               onPressed: () {
@@ -164,7 +200,7 @@ class _CameraPageState extends State<CameraPage> {
                   _vin = _controller.text;
                 });
                 Navigator.of(context).pop();
-                print('VIN Confirmado: $_vin'); // Aquí puedes usar el VIN para el siguiente paso
+                print('VIN Confirmado: $_vin');
               },
             ),
           ],
@@ -189,7 +225,7 @@ class _CameraPageState extends State<CameraPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                _showSelectedVinDialog();  // Permitir ingresar el VIN manualmente
+                _showSelectedVinDialog();
               },
               child: Text('Introducir VIN manualmente'),
             ),
