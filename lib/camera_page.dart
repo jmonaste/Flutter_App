@@ -4,7 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:http_parser/http_parser.dart';  // Importar para manejar tipos MIME
+import 'package:http_parser/http_parser.dart';
+import 'home_page.dart';  // Importa HomePage para la navegación de "Inicio"
 
 class CameraPage extends StatefulWidget {
   final String token;
@@ -21,6 +22,7 @@ class _CameraPageState extends State<CameraPage> {
   String? _vin;
   List<Map<String, dynamic>> detectedCodes = [];
   final picker = ImagePicker();
+  int _selectedIndex = 1;  // Por defecto, el índice estará en "Administrar"
 
   Future<void> _scanQRorBarcode() async {
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
@@ -209,6 +211,24 @@ class _CameraPageState extends State<CameraPage> {
     );
   }
 
+  // Método para manejar la navegación del BottomNavigationBar
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    if (index == 0) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomePage(token: widget.token),
+        ),
+      );
+    } else if (index == 2) {
+      // Lógica para el botón "Cuenta"
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -231,6 +251,27 @@ class _CameraPageState extends State<CameraPage> {
             ),
           ],
         ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Inicio',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Administrar',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.account_circle),
+            label: 'Cuenta',
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.blueAccent,
+        unselectedItemColor: Colors.white70,
+        backgroundColor: Colors.black87,
+        onTap: _onItemTapped,
       ),
     );
   }
