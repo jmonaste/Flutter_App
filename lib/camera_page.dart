@@ -21,8 +21,36 @@ class _CameraPageState extends State<CameraPage> {
   Uint8List? _webImage;
   String? _vin;
   List<Map<String, dynamic>> detectedCodes = [];
+  List<String> _models = [];  // Lista de modelos para el desplegable
+  String? _selectedModel;  // Modelo seleccionado en el desplegable
+  bool _isUrgent = false;  // Booleano para manejar la urgencia del vehículo
   final picker = ImagePicker();
+  final TextEditingController _vinController = TextEditingController();
   int _selectedIndex = 1;  // Por defecto, el índice estará en "Administrar"
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchModels();  // Llamada a la API para obtener los modelos de vehículos
+  }
+
+  Future<void> _fetchModels() async {
+    var url = Uri.parse('http://192.168.1.45:8000/api/models');
+    var response = await http.get(url, headers: {
+      'Authorization': 'Bearer ${widget.token}',
+    });
+
+    if (response.statusCode == 200) {
+      List<dynamic> modelsJson = jsonDecode(response.body);
+      setState(() {
+        _models = modelsJson.map((model) {
+          return '${model['brand']['name']} ${model['name']}';  // Formato "Brand Model"
+        }).toList();
+      });
+    } else {
+      print('Error fetching models. Status: ${response.statusCode}');
+    }
+  }
 
   Future<void> _scanQRorBarcode() async {
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
@@ -147,62 +175,18 @@ class _CameraPageState extends State<CameraPage> {
                       onTap: () {
                         setState(() {
                           _vin = code['data'];
+                          _vinController.text = _vin!;
                         });
                         Navigator.of(context).pop();
-                        _showSelectedVinDialog();
                       },
                     );
                   }).toList(),
                 ),
           actions: <Widget>[
-            if (detectedCodes.isEmpty)
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  _showSelectedVinDialog();
-                },
-                child: Text('Introducir VIN manualmente'),
-              ),
             TextButton(
               child: Text('Cerrar'),
               onPressed: () {
                 Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // Mostrar el VIN seleccionado en un nuevo modal para confirmar o editar
-  void _showSelectedVinDialog() {
-    TextEditingController _controller = TextEditingController(text: _vin);
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Confirmar VIN'),
-          content: TextField(
-            controller: _controller,
-            decoration: InputDecoration(hintText: 'Introduce o edita el VIN'),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Cancelar'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: Text('Confirmar'),
-              onPressed: () {
-                setState(() {
-                  _vin = _controller.text;
-                });
-                Navigator.of(context).pop();
-                print('VIN Confirmado: $_vin');
               },
             ),
           ],
@@ -231,47 +215,124 @@ class _CameraPageState extends State<CameraPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Camera Page'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            ElevatedButton(
-              onPressed: _scanQRorBarcode,
-              child: Text('Escanear QR o BarCode'),
+    return MaterialApp(
+      theme: ThemeData.dark().copyWith(
+        colorScheme: ColorScheme.dark().copyWith(
+          primary: Colors.blueAccent,
+        ),
+        scaffoldBackgroundColor: Colors.black87,
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+            backgroundColor: Colors.blueAccent,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
-            ElevatedButton(
-              onPressed: () {
-                _showSelectedVinDialog();
-              },
-              child: Text('Introducir VIN manualmente'),
-            ),
-          ],
+          ),
+        ),
+        textTheme: TextTheme(
+          titleLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+          bodyLarge: TextStyle(fontSize: 18, color: Colors.white),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Inicio',
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text('Camera Page', style: Theme.of(context).textTheme.titleLarge),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              // TextField para el VIN leído o manual
+              TextField(
+                controller: _vinController,
+                decoration: InputDecoration(
+                  hintText: 'Introducir VIN',
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.camera_alt),
+                    onPressed: _scanQRorBarcode,  // Lógica del escaneo QR al presionar el ícono de cámara
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Colors.black54,
+                ),
+                style: TextStyle(color: Colors.white),
+              ),
+              SizedBox(height: 20),
+              // Dropdown para seleccionar el modelo de vehículo
+              DropdownButtonFormField<String>(
+                decoration: InputDecoration(
+                  hintText: 'Seleccionar modelo',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Colors.black54,
+                ),
+                dropdownColor: Colors.black54,
+                value: _selectedModel,
+                items: _models.map((model) {
+                  return DropdownMenuItem<String>(
+                    value: model,
+                    child: Text(model, style: TextStyle(color: Colors.white)),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _selectedModel = newValue!;
+                  });
+                },
+              ),
+              SizedBox(height: 20),
+              // Switch para indicar si el vehículo es urgente
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '¿Marcar como urgente?',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  Switch(
+                    value: _isUrgent,
+                    onChanged: (bool value) {
+                      setState(() {
+                        _isUrgent = value;
+                      });
+                    },
+                    activeColor: Colors.blueAccent,
+                    inactiveThumbColor: Colors.white,
+                    inactiveTrackColor: Colors.grey,
+                  ),
+                ],
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Administrar',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle),
-            label: 'Cuenta',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blueAccent,
-        unselectedItemColor: Colors.white70,
-        backgroundColor: Colors.black87,
-        onTap: _onItemTapped,
+        ),
+        bottomNavigationBar: BottomNavigationBar(
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Inicio',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.settings),
+              label: 'Administrar',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.account_circle),
+              label: 'Cuenta',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          selectedItemColor: Colors.blueAccent,
+          unselectedItemColor: Colors.white70,
+          backgroundColor: Colors.black87,
+          onTap: _onItemTapped,
+        ),
       ),
     );
   }
