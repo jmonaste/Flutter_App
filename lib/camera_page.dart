@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:http_parser/http_parser.dart';
+import 'custom_drawer.dart';  // Importa el CustomDrawer
+import 'custom_footer.dart';  // Importa el CustomFooter
 import 'home_page.dart';  // Importa HomePage para la navegación de "Inicio"
 
 class CameraPage extends StatefulWidget {
@@ -27,6 +29,7 @@ class _CameraPageState extends State<CameraPage> {
   final picker = ImagePicker();
   final TextEditingController _vinController = TextEditingController();
   int _selectedIndex = 1;  // Por defecto, el índice estará en "Administrar"
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -168,11 +171,12 @@ class _CameraPageState extends State<CameraPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Error'),
-          content: Text(message),
+          backgroundColor: Colors.black87,  // Asegúrate de usar un fondo oscuro
+          title: Text('Error', style: TextStyle(color: Colors.white)),
+          content: Text(message, style: TextStyle(color: Colors.white70)),
           actions: <Widget>[
             TextButton(
-              child: Text('Aceptar'),
+              child: Text('Aceptar', style: TextStyle(color: Colors.blueAccent)),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -252,11 +256,12 @@ class _CameraPageState extends State<CameraPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Vehículo registrado'),
-          content: Text('El vehículo ha sido dado de alta con éxito.'),
+          backgroundColor: Colors.black87,
+          title: Text('Vehículo registrado', style: TextStyle(color: Colors.white)),
+          content: Text('El vehículo ha sido dado de alta con éxito.', style: TextStyle(color: Colors.white70)),
           actions: <Widget>[
             TextButton(
-              child: Text('Aceptar'),
+              child: Text('Aceptar', style: TextStyle(color: Colors.blueAccent)),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -287,137 +292,112 @@ class _CameraPageState extends State<CameraPage> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: ThemeData.dark().copyWith(
-        colorScheme: ColorScheme.dark().copyWith(
-          primary: Colors.blueAccent,
-        ),
-        scaffoldBackgroundColor: Colors.black87,
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-            backgroundColor: Colors.blueAccent,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-        textTheme: TextTheme(
-          titleLarge: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-          bodyLarge: TextStyle(fontSize: 18, color: Colors.white),
+    return Scaffold(
+      key: _scaffoldKey,
+      appBar: AppBar(
+        title: Text('Camera Page', style: Theme.of(context).textTheme.titleLarge),
+        leading: IconButton(
+          icon: Icon(Icons.account_circle),
+          onPressed: () {
+            _scaffoldKey.currentState!.openDrawer();
+          },
         ),
       ),
-      home: Scaffold(
-        appBar: AppBar(
-          title: Text('Camera Page', style: Theme.of(context).textTheme.titleLarge),
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              // TextField para el VIN leído o manual
-              TextField(
-                controller: _vinController,
-                decoration: InputDecoration(
-                  hintText: 'Introducir VIN',
-                  suffixIcon: IconButton(
-                    icon: Icon(Icons.camera_alt),
-                    onPressed: _scanQRorBarcode,  // Lógica del escaneo QR al presionar el ícono de cámara
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.black54,
+      drawer: CustomDrawer(
+        userName: 'Nombre del usuario',
+        onProfileTap: () {
+          // Lógica para ver el perfil
+        },
+        token: widget.token,  // Pasamos el token al CustomDrawer
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            // TextField para el VIN leído o manual
+            TextField(
+              controller: _vinController,
+              decoration: InputDecoration(
+                hintText: 'Introducir VIN',
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.camera_alt),
+                  onPressed: _scanQRorBarcode,  // Lógica del escaneo QR al presionar el ícono de cámara
                 ),
-                style: TextStyle(color: Colors.white),
-              ),
-              SizedBox(height: 20),
-              // Dropdown para seleccionar el modelo de vehículo
-              DropdownButtonFormField<Map<String, dynamic>>(
-                decoration: InputDecoration(
-                  hintText: 'Seleccionar modelo',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.black54,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                dropdownColor: Colors.black54,
-                value: _selectedModel,
-                items: _models.map((model) {
-                  return DropdownMenuItem<Map<String, dynamic>>(
-                    value: model,
-                    child: Text(model['name'], style: TextStyle(color: Colors.white)),
-                  );
-                }).toList(),
-                onChanged: (Map<String, dynamic>? newValue) {
-                  setState(() {
-                    _selectedModel = newValue!;
-                  });
-                },
+                filled: true,
+                fillColor: Colors.black54,  // Fondo oscuro
               ),
-              SizedBox(height: 20),
-              // Switch para indicar si el vehículo es urgente
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '¿Marcar como urgente?',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  Switch(
-                    value: _isUrgent,
-                    onChanged: (bool value) {
-                      setState(() {
-                        _isUrgent = value;
-                      });
-                    },
-                    activeColor: Colors.blueAccent,
-                    inactiveThumbColor: Colors.white,
-                    inactiveTrackColor: Colors.grey,
-                  ),
-                ],
-              ),
-              SizedBox(height: 20),
-              // Botón para dar de alta el vehículo
-              ElevatedButton(
-                onPressed: (_vinController.text.isNotEmpty && _selectedModel != null) ? _registerVehicle : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text('Dar de alta el vehículo', style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          ),
-        ),
-        bottomNavigationBar: BottomNavigationBar(
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Inicio',
+              style: TextStyle(color: Colors.white),  // Texto en blanco
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.settings),
-              label: 'Administrar',
+            SizedBox(height: 20),
+            // Dropdown para seleccionar el modelo de vehículo
+            DropdownButtonFormField<Map<String, dynamic>>(
+              decoration: InputDecoration(
+                hintText: 'Seleccionar modelo',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: Colors.black54,  // Fondo oscuro
+              ),
+              dropdownColor: Colors.black54,
+              value: _selectedModel,
+              items: _models.map((model) {
+                return DropdownMenuItem<Map<String, dynamic>>(
+                  value: model,
+                  child: Text(model['name'], style: TextStyle(color: Colors.white)),  // Texto en blanco
+                );
+              }).toList(),
+              onChanged: (Map<String, dynamic>? newValue) {
+                setState(() {
+                  _selectedModel = newValue!;
+                });
+              },
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.account_circle),
-              label: 'Cuenta',
+            SizedBox(height: 20),
+            // Switch para indicar si el vehículo es urgente
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '¿Marcar como urgente?',
+                  style: TextStyle(color: Colors.white),
+                ),
+                Switch(
+                  value: _isUrgent,
+                  onChanged: (bool value) {
+                    setState(() {
+                      _isUrgent = value;
+                    });
+                  },
+                  activeColor: Colors.blueAccent,
+                  inactiveThumbColor: Colors.white,
+                  inactiveTrackColor: Colors.grey,
+                ),
+              ],
+            ),
+            SizedBox(height: 20),
+            // Botón para dar de alta el vehículo
+            ElevatedButton(
+              onPressed: (_vinController.text.isNotEmpty && _selectedModel != null) ? _registerVehicle : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text('Dar de alta el vehículo', style: TextStyle(color: Colors.white)),
             ),
           ],
-          currentIndex: _selectedIndex,
-          selectedItemColor: Colors.blueAccent,
-          unselectedItemColor: Colors.white70,
-          backgroundColor: Colors.black87,
-          onTap: _onItemTapped,
         ),
+      ),
+      bottomNavigationBar: CustomFooter(
+        selectedIndex: _selectedIndex,
+        onTap: _onItemTapped,
       ),
     );
   }
