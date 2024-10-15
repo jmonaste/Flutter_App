@@ -21,8 +21,8 @@ class _CameraPageState extends State<CameraPage> {
   Uint8List? _webImage;
   String? _vin;
   List<Map<String, dynamic>> detectedCodes = [];
-  List<String> _models = [];  // Lista de modelos para el desplegable
-  String? _selectedModel;  // Modelo seleccionado en el desplegable
+  List<Map<String, dynamic>> _models = [];  // Lista de modelos con id y name
+  Map<String, dynamic>? _selectedModel;  // Modelo seleccionado en el desplegable
   bool _isUrgent = false;  // Booleano para manejar la urgencia del vehículo
   final picker = ImagePicker();
   final TextEditingController _vinController = TextEditingController();
@@ -44,7 +44,10 @@ class _CameraPageState extends State<CameraPage> {
       List<dynamic> modelsJson = jsonDecode(response.body);
       setState(() {
         _models = modelsJson.map((model) {
-          return '${model['brand']['name']} ${model['name']}';  // Formato "Brand Model"
+          return {
+            'id': model['id'],  // Guardamos el id del modelo
+            'name': '${model['brand']['name']} ${model['name']}',  // Formato "Brand Model"
+          };
         }).toList();
       });
     } else {
@@ -129,6 +132,36 @@ class _CameraPageState extends State<CameraPage> {
     }
   }
 
+  Future<void> _registerVehicle() async {
+    // Usamos el valor del VIN que está en el TextField, no el seleccionado
+    String vinToSend = _vinController.text.trim();
+    if (vinToSend.isEmpty || _selectedModel == null) {
+      return; // Evita hacer la petición si no hay VIN o modelo seleccionado
+    }
+
+    int modelId = _selectedModel!['id'];  // Recupera el ID del modelo seleccionado
+
+    var url = Uri.parse('http://192.168.1.45:8000/api/vehicles');
+    var response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${widget.token}',
+      },
+      body: jsonEncode({
+        'vehicle_model_id': modelId,
+        'vin': vinToSend,  // Usar el VIN del TextField
+        'is_urgent': _isUrgent,
+      }),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      _showSuccessDialog();
+    } else {
+      _showErrorDialog('Error al dar de alta el vehículo. Código: ${response.statusCode}');
+    }
+  }
+
   // Método para mostrar el diálogo de error
   void _showErrorDialog(String message) {
     showDialog(
@@ -156,22 +189,38 @@ class _CameraPageState extends State<CameraPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Selecciona un código'),
+          backgroundColor: Colors.black87,  // Fondo oscuro
+          title: Text(
+            'Selecciona un código',
+            style: TextStyle(color: Colors.white),  // Texto blanco en el título
+          ),
           content: detectedCodes.isEmpty
               ? Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('No se detectó ningún código VIN.'),
+                    Text(
+                      'No se detectó ningún código VIN.',
+                      style: TextStyle(color: Colors.white70),  // Texto gris claro
+                    ),
                     SizedBox(height: 10),
-                    Text('Por favor, introduzca el VIN manualmente.'),
+                    Text(
+                      'Por favor, introduzca el VIN manualmente.',
+                      style: TextStyle(color: Colors.white70),  // Texto gris claro
+                    ),
                   ],
                 )
               : Column(
                   mainAxisSize: MainAxisSize.min,
                   children: detectedCodes.map((code) {
                     return ListTile(
-                      title: Text('Tipo: ${code['type']}'),
-                      subtitle: Text('Código: ${code['data']}'),
+                      title: Text(
+                        'Tipo: ${code['type']}',
+                        style: TextStyle(color: Colors.white),  // Texto blanco para el tipo
+                      ),
+                      subtitle: Text(
+                        'Código: ${code['data']}',
+                        style: TextStyle(color: Colors.white70),  // Texto gris claro para el código
+                      ),
                       onTap: () {
                         setState(() {
                           _vin = code['data'];
@@ -184,7 +233,30 @@ class _CameraPageState extends State<CameraPage> {
                 ),
           actions: <Widget>[
             TextButton(
-              child: Text('Cerrar'),
+              child: Text(
+                'Cerrar',
+                style: TextStyle(color: Colors.blueAccent),  // Texto del botón con el color primario
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Vehículo registrado'),
+          content: Text('El vehículo ha sido dado de alta con éxito.'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Aceptar'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -264,7 +336,7 @@ class _CameraPageState extends State<CameraPage> {
               ),
               SizedBox(height: 20),
               // Dropdown para seleccionar el modelo de vehículo
-              DropdownButtonFormField<String>(
+              DropdownButtonFormField<Map<String, dynamic>>(
                 decoration: InputDecoration(
                   hintText: 'Seleccionar modelo',
                   border: OutlineInputBorder(
@@ -276,12 +348,12 @@ class _CameraPageState extends State<CameraPage> {
                 dropdownColor: Colors.black54,
                 value: _selectedModel,
                 items: _models.map((model) {
-                  return DropdownMenuItem<String>(
+                  return DropdownMenuItem<Map<String, dynamic>>(
                     value: model,
-                    child: Text(model, style: TextStyle(color: Colors.white)),
+                    child: Text(model['name'], style: TextStyle(color: Colors.white)),
                   );
                 }).toList(),
-                onChanged: (String? newValue) {
+                onChanged: (Map<String, dynamic>? newValue) {
                   setState(() {
                     _selectedModel = newValue!;
                   });
@@ -308,6 +380,19 @@ class _CameraPageState extends State<CameraPage> {
                     inactiveTrackColor: Colors.grey,
                   ),
                 ],
+              ),
+              SizedBox(height: 20),
+              // Botón para dar de alta el vehículo
+              ElevatedButton(
+                onPressed: (_vinController.text.isNotEmpty && _selectedModel != null) ? _registerVehicle : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text('Dar de alta el vehículo', style: TextStyle(color: Colors.white)),
               ),
             ],
           ),
