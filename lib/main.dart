@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'home_page.dart'; // Importa tu archivo de HomePage
+import 'package:shared_preferences/shared_preferences.dart';
+import 'home_page.dart';
 
 void main() {
   runApp(MyApp());
@@ -11,7 +12,51 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: LoginScreen(),
+      home: TokenCheckScreen(), // Verifica si hay token almacenado
+    );
+  }
+}
+
+class TokenCheckScreen extends StatefulWidget {
+  @override
+  _TokenCheckScreenState createState() => _TokenCheckScreenState();
+}
+
+class _TokenCheckScreenState extends State<TokenCheckScreen> {
+  String? _token;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkForToken();  // Verifica si hay un token guardado
+  }
+
+  Future<void> _checkForToken() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+    if (token != null) {
+      // Si el token existe, navega directamente a HomePage
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomePage(token: token),
+        ),
+      );
+    } else {
+      // Si no hay token, muestra la pantalla de login
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LoginScreen(),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(child: CircularProgressIndicator()),  // Muestra un loader mientras se verifica el token
     );
   }
 }
@@ -27,63 +72,61 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String _errorMessage = '';
 
-Future<void> _login() async {
-  setState(() {
-    _isLoading = true;
-    _errorMessage = '';
-  });
-
-  final String username = _usernameController.text;
-  final String password = _passwordController.text;
-
-  try {
-    final response = await http.post(
-      Uri.parse('http://192.168.1.45:8000/token'), // Ajusta la URL de tu API
-      headers: <String, String>{
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: 'grant_type=password&username=$username&password=$password&scope=&client_id=&client_secret=',
-    );
-
-    //print('Response status: ${response.statusCode}');
-    //print('Response body: ${response.body}');
-
+  Future<void> _login() async {
     setState(() {
-      _isLoading = false;
+      _isLoading = true;
+      _errorMessage = '';
     });
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body); // Decodifica la respuesta JSON
-      final token = data['access_token'];
-      final tokenType = data['token_type'];
+    final String username = _usernameController.text;
+    final String password = _passwordController.text;
 
-      //print('Token: $token');
-      //print('Token type: $tokenType');
-
-      // Navegar a la página de inicio si el login es exitoso
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => HomePage(token: token),  // Pasamos el token a la HomePage
-        ),
+    try {
+      final response = await http.post(
+        Uri.parse('http://192.168.1.45:8000/token'),
+        headers: <String, String>{
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body:
+            'grant_type=password&username=$username&password=$password&scope=&client_id=&client_secret=',
       );
-    } else if (response.statusCode == 401) {
+
       setState(() {
-        _errorMessage = 'Login failed. Incorrect credentials.';
+        _isLoading = false;
       });
-    } else {
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final token = data['access_token'];
+
+        // Almacenar el token usando shared_preferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', token);
+
+        // Navegar a la página principal
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => HomePage(token: token),
+          ),
+        );
+      } else if (response.statusCode == 401) {
+        setState(() {
+          _errorMessage = 'Login failed. Incorrect credentials.';
+        });
+      } else {
+        setState(() {
+          _errorMessage = 'An error occurred. Please try again.';
+        });
+      }
+    } catch (error) {
       setState(() {
-        _errorMessage = 'An error occurred. Please try again.';
+        _isLoading = false;
+        _errorMessage = 'An error occurred: $error';
       });
+      print('Error: $error');
     }
-  } catch (error) {
-    setState(() {
-      _isLoading = false;
-      _errorMessage = 'An error occurred: $error';
-    });
-    print('Error: $error');
   }
-}
 
   @override
   Widget build(BuildContext context) {

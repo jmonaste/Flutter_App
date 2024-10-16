@@ -19,6 +19,7 @@ dependencies:
   camera: ^0.11.0+2
   file_picker: ^5.2.4
   qr_code_scanner: ^1.0.1
+  shared_preferences: ^2.0.9
 
 dev_dependencies:
   flutter_test:
