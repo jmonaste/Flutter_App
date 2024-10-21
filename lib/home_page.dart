@@ -5,12 +5,8 @@ import 'custom_drawer.dart';
 import 'custom_footer.dart';
 import 'camera_page.dart';
 import 'vehicle_detail_page.dart'; // Import the new detail page
-import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';  // Si usas SharedPreferences
-import 'custom_drawer.dart';
-import 'custom_footer.dart';
 import 'main.dart';
-import 'vehicle_detail_page.dart';
 
 class HomePage extends StatefulWidget {
   final String token;  // Añadido para pasar el token
@@ -56,17 +52,33 @@ class _HomePageState extends State<HomePage> {
     });
 
     if (response.statusCode == 200) {
-      List<dynamic> vehiclesJson = jsonDecode(response.body);
+      List<dynamic> vehiclesJson = jsonDecode(utf8.decode(response.bodyBytes));
+      List<Map<String, dynamic>> vehiclesWithState = [];
+
+      for (var vehicle in vehiclesJson) {
+        var stateUrl = Uri.parse('http://127.0.0.1:8000/api/vehicles/${vehicle['id']}/current_state');
+        var stateResponse = await http.get(stateUrl, headers: {
+          'Authorization': 'Bearer ${widget.token}',
+        });
+
+        String stateName = 'Desconocido';
+        if (stateResponse.statusCode == 200) {
+          var stateJson = jsonDecode(utf8.decode(stateResponse.bodyBytes));
+          stateName = stateJson['name'] ?? 'Desconocido';
+        }
+
+        vehiclesWithState.add({
+          'id': vehicle['id'] ?? -1, // Asignar -1 si el id no está presente
+          'vin': vehicle['vin'] ?? 'Sin VIN',
+          'brand': vehicle['model']?['brand']?['name'] ?? 'Marca Desconocida',
+          'model': vehicle['model']?['name'] ?? 'Modelo Desconocido',
+          'is_urgent': vehicle['is_urgent'] ?? false,
+          'status': stateName,
+        });
+      }
+
       setState(() {
-        _vehicles = vehiclesJson.map((vehicle) {
-          return {
-            'vin': vehicle['vin'],
-            'brand': vehicle['model']['brand']['name'],
-            'model': vehicle['model']['name'],
-            'is_urgent': vehicle['is_urgent'],
-            'status': vehicle['status'],
-          };
-        }).toList();
+        _vehicles = vehiclesWithState;
       });
     } else {
       print('Error fetching vehicles. Status: ${response.statusCode}');
@@ -141,20 +153,25 @@ class _HomePageState extends State<HomePage> {
                     final vehicle = _vehicles[index];
                     return GestureDetector(
                       onTap: () {
-                        // Navegar a la página de detalles del vehículo
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => VehicleDetailPage(
-                              vin: vehicle['vin'],
-                              brand: vehicle['brand'],
-                              model: vehicle['model'],
-                              isUrgent: vehicle['is_urgent'],
-                              status: vehicle['status'],
-                              token: widget.token
+                        if (vehicle['id'] != -1) {
+                          // Navegar a la página de detalles del vehículo
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => VehicleDetailPage(
+                                vehicleId: vehicle['id'],
+                                vin: vehicle['vin'],
+                                brand: vehicle['brand'],
+                                model: vehicle['model'],
+                                isUrgent: vehicle['is_urgent'],
+                                status: vehicle['status'],
+                                token: widget.token,
+                              ),
                             ),
-                          ),
-                        );
+                          );
+                        } else {
+                          print('ID de vehículo no válido');
+                        }
                       },
                       child: Card(
                         color: Colors.black54,

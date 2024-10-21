@@ -263,7 +263,15 @@ class _CameraPageState extends State<CameraPage> {
             TextButton(
               child: Text('Aceptar', style: TextStyle(color: Colors.blueAccent)),
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(); // Cierra el diálogo
+                // Navega al HomePage después de cerrar el diálogo
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => HomePage(token: widget.token),
+                  ),
+                  (Route<dynamic> route) => false,
+                );
               },
             ),
           ],
@@ -271,6 +279,7 @@ class _CameraPageState extends State<CameraPage> {
       },
     );
   }
+
 
   // Método para manejar la navegación del BottomNavigationBar
   void _onItemTapped(int index) {
