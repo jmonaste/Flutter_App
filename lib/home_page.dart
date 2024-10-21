@@ -6,7 +6,9 @@ import 'custom_footer.dart';
 import 'camera_page.dart';
 import 'vehicle_detail_page.dart'; // Import the new detail page
 import 'package:shared_preferences/shared_preferences.dart';  // Si usas SharedPreferences
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'main.dart';
+import 'vin_search_page.dart';
 
 class HomePage extends StatefulWidget {
   final String token;  // Añadido para pasar el token
@@ -184,19 +186,61 @@ class _HomePageState extends State<HomePage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'VIN: ${vehicle['vin']}',
-                                style: TextStyle(fontSize: 16, color: Colors.white),
+                              // VIN
+                              RichText(
+                                text: TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: 'VIN: ',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.normal,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: vehicle['vin'],
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              Text(
-                                'Marca y Modelo: ${vehicle['brand']} ${vehicle['model']}',
-                                style: TextStyle(fontSize: 16, color: Colors.white),
+                              // Marca y Modelo
+                              RichText(
+                                text: TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: 'Marca y Modelo: ',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.normal,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: '${vehicle['brand']} ${vehicle['model']}',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
+                              // Urgente
                               Row(
                                 children: [
                                   Text(
                                     'Urgente: ',
-                                    style: TextStyle(fontSize: 16, color: Colors.white),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.normal,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                   Icon(
                                     vehicle['is_urgent']
@@ -207,9 +251,27 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                 ],
                               ),
-                              Text(
-                                'Estado: ${vehicle['status']}',
-                                style: TextStyle(fontSize: 16, color: Colors.white),
+                              // Estado
+                              RichText(
+                                text: TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: 'Estado: ',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.normal,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: vehicle['status'],
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
@@ -218,6 +280,46 @@ class _HomePageState extends State<HomePage> {
                     );
                   },
                 ),
+        ),
+        // Dentro de tu método build, en el Scaffold
+        floatingActionButton: SpeedDial(
+          animatedIcon: AnimatedIcons.menu_close,
+          backgroundColor: Colors.blueAccent,
+          foregroundColor: Colors.white,
+          overlayColor: Colors.black,
+          overlayOpacity: 0.5,
+          children: [
+            SpeedDialChild(
+              child: Icon(Icons.search),
+              label: 'Buscar Vehículo',
+              backgroundColor: Colors.blueAccent,
+              labelStyle: TextStyle(color: Colors.white),
+              onTap: () {
+                // Navegar a VinSearchPage
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => VinSearchPage(token: widget.token),
+                  ),
+                );
+              },
+            ),
+            SpeedDialChild(
+              child: Icon(Icons.add),
+              label: 'Añadir Vehículo',
+              backgroundColor: Colors.blueAccent,
+              labelStyle: TextStyle(color: Colors.white),
+              onTap: () {
+                // Navegar a la página para añadir un vehículo
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CameraPage(token: widget.token),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
         bottomNavigationBar: CustomFooter(
           selectedIndex: _selectedIndex,
