@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:http_parser/http_parser.dart';
+import 'constants.dart';
 import 'custom_drawer.dart';  // Importa el CustomDrawer
 import 'custom_footer.dart';  // Importa el CustomFooter
 import 'home_page.dart';      // Importa HomePage para la navegación de "Inicio"
@@ -67,7 +68,7 @@ class _VinSearchPageState extends State<VinSearchPage> {
       return;
     }
 
-    var uri = Uri.parse('http://192.168.1.45:8000/scan');
+    var uri = Uri.parse('$baseUrl/scan');
     var request = http.MultipartRequest('POST', uri);
 
     if (kIsWeb) {
@@ -130,7 +131,7 @@ class _VinSearchPageState extends State<VinSearchPage> {
       return;
     }
 
-    var url = Uri.parse('http://192.168.1.45:8000/api/vehicles/search_by_vin/$vinToSearch');
+    var url = Uri.parse('$baseUrl/api/vehicles/search_by_vin/$vinToSearch');
     try {
       var response = await http.get(
         url,

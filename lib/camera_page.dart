@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:http_parser/http_parser.dart';
+import 'constants.dart';
 import 'custom_drawer.dart';  // Importa el CustomDrawer
 import 'custom_footer.dart';  // Importa el CustomFooter
 import 'home_page.dart';  // Importa HomePage para la navegación de "Inicio"
@@ -38,7 +39,7 @@ class _CameraPageState extends State<CameraPage> {
   }
 
   Future<void> _fetchModels() async {
-    var url = Uri.parse('http://192.168.1.45:8000/api/models');
+    var url = Uri.parse('$baseUrl/api/models');
     var response = await http.get(url, headers: {
       'Authorization': 'Bearer ${widget.token}',
     });
@@ -84,7 +85,7 @@ class _CameraPageState extends State<CameraPage> {
       return;
     }
 
-    var uri = Uri.parse('http://192.168.1.45:8000/scan');
+    var uri = Uri.parse('$baseUrl/scan');
     var request = http.MultipartRequest('POST', uri);
 
     if (kIsWeb) {
@@ -144,7 +145,7 @@ class _CameraPageState extends State<CameraPage> {
 
     int modelId = _selectedModel!['id'];  // Recupera el ID del modelo seleccionado
 
-    var url = Uri.parse('http://192.168.1.45:8000/api/vehicles');
+    var url = Uri.parse('$baseUrl/api/vehicles');
     var response = await http.post(
       url,
       headers: {

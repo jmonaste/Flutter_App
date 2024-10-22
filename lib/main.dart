@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'constants.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'home_page.dart';
 
-void main() {
+void main() async{
   runApp(MyApp());
 }
 
@@ -83,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.1.45:8000/token'),
+        Uri.parse('$baseUrl/token'),
         headers: <String, String>{
           'Content-Type': 'application/x-www-form-urlencoded',
         },

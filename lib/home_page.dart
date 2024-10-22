@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'custom_drawer.dart';
 import 'custom_footer.dart';
+import 'constants.dart';
 import 'camera_page.dart';
 import 'vehicle_detail_page.dart'; // Import the new detail page
 import 'package:shared_preferences/shared_preferences.dart';  // Si usas SharedPreferences
@@ -48,7 +49,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _fetchVehicles() async {
-    var url = Uri.parse('http://127.0.0.1:8000/api/vehicles');
+    var url = Uri.parse('$baseUrl/api/vehicles');
     var response = await http.get(url, headers: {
       'Authorization': 'Bearer ${widget.token}',
     });
@@ -58,7 +59,7 @@ class _HomePageState extends State<HomePage> {
       List<Map<String, dynamic>> vehiclesWithState = [];
 
       for (var vehicle in vehiclesJson) {
-        var stateUrl = Uri.parse('http://127.0.0.1:8000/api/vehicles/${vehicle['id']}/current_state');
+        var stateUrl = Uri.parse('$baseUrl/api/vehicles/${vehicle['id']}/current_state');
         var stateResponse = await http.get(stateUrl, headers: {
           'Authorization': 'Bearer ${widget.token}',
         });

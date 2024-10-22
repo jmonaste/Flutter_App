@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'custom_drawer.dart';
 import 'custom_footer.dart';
+import 'constants.dart';
 import 'home_page.dart';  // Importa HomePage para la navegación de "Inicio"
 
 class VehicleDetailPage extends StatefulWidget {
@@ -41,7 +42,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
   }
 
   Future<void> _fetchAllowedTransitions() async {
-    var url = Uri.parse('http://127.0.0.1:8000/api/vehicles/${widget.vehicleId}/allowed_transitions');
+    var url = Uri.parse('$baseUrl/api/vehicles/${widget.vehicleId}/allowed_transitions');
     var response = await http.get(url, headers: {
       'Authorization': 'Bearer ${widget.token}',
     });
@@ -66,8 +67,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
   }
 
   Future<void> _fetchStatesDetails() async {
-    print(widget.token);
-    var url = Uri.parse('http://127.0.0.1:8000/api/states/');
+    var url = Uri.parse('$baseUrl/api/states/');
     var response = await http.get(url, headers: {
       'Authorization': 'Bearer ${widget.token}',
     });
