@@ -288,7 +288,7 @@ class _HomePageState extends State<HomePage> {
           backgroundColor: Colors.blueAccent,
           foregroundColor: Colors.white,
           overlayColor: Colors.black,
-          overlayOpacity: 0.5,
+          overlayOpacity: 0.8,
           children: [
             SpeedDialChild(
               child: Icon(Icons.search),
