@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Importa SharedPreferences
 import 'package:http/http.dart' as http; // Para realizar la llamada de logout
 import 'vehicle_type_list.dart';
+import 'manage_vehicle_models.dart';
+import 'manage_vehicle_brand.dart';
 import 'camera_page.dart';
 import 'home_page.dart';
 import 'main.dart'; // Importa para redirigir al LoginScreen
@@ -133,6 +135,32 @@ class CustomDrawer extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => VehicleTypeListPage(token: token),
+                ),
+              );
+            },
+          ),
+          // Nueva opción "Marcas"
+          ListTile(
+            leading: Icon(Icons.business, color: Colors.white),
+            title: Text('Marcas', style: TextStyle(color: Colors.white)),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => VehicleBrandManagePage(token: token),
+                ),
+              );
+            },
+          ),
+          // Nueva opción "Modelos"
+          ListTile(
+            leading: Icon(Icons.category, color: Colors.white),
+            title: Text('Modelos', style: TextStyle(color: Colors.white)),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => VehicleModelManagePage(token: token),
                 ),
               );
             },

@@ -149,11 +149,6 @@ class _VinSearchPageState extends State<VinSearchPage> {
           MaterialPageRoute(
             builder: (context) => VehicleDetailPage(
               vehicleId: vehicleData['id'],
-              vin: vehicleData['vin'],
-              brand: vehicleData['model']['brand']['name'],
-              model: vehicleData['model']['name'],
-              isUrgent: vehicleData['is_urgent'],
-              status: vehicleData['current_state']['name'], // Ajusta según tu estructura de datos
               token: widget.token,
             ),
           ),

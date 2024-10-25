@@ -5,7 +5,7 @@ import 'custom_drawer.dart';
 import 'custom_footer.dart';
 import 'constants.dart';
 import 'camera_page.dart';
-import 'vehicle_detail_page.dart'; // Import the new detail page
+import 'vehicle_detail_page.dart'; // Import the detail page
 import 'package:shared_preferences/shared_preferences.dart';  // Si usas SharedPreferences
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'main.dart';
@@ -20,10 +20,10 @@ class HomePage extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _HomePageState createState() => _HomePageState();
+  HomePageState createState() => HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   List<Map<String, dynamic>> _vehicles = [];  // Lista para almacenar los vehículos
@@ -32,20 +32,6 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _fetchVehicles();  // Llamada para obtener los vehículos
-  }
-
-  // Función para cerrar sesión
-  Future<void> _logout() async {
-    // Si estás usando SharedPreferences, puedes borrar el token aquí
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.clear();  // Borrar el almacenamiento
-
-    // Navegar a la página de inicio de sesión y limpiar el stack de navegación
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => LoginScreen()),
-      (Route<dynamic> route) => false,
-    );
   }
 
   Future<void> _fetchVehicles() async {
@@ -157,17 +143,12 @@ class _HomePageState extends State<HomePage> {
                     return GestureDetector(
                       onTap: () {
                         if (vehicle['id'] != -1) {
-                          // Navegar a la página de detalles del vehículo
+                          // Navegar a la página de detalles del vehículo pasando solo vehicleId y token
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => VehicleDetailPage(
                                 vehicleId: vehicle['id'],
-                                vin: vehicle['vin'],
-                                brand: vehicle['brand'],
-                                model: vehicle['model'],
-                                isUrgent: vehicle['is_urgent'],
-                                status: vehicle['status'],
                                 token: widget.token,
                               ),
                             ),
