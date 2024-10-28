@@ -35,7 +35,7 @@ class HomePageState extends State<HomePage> {
   }
 
   Future<void> _fetchVehicles() async {
-    var url = Uri.parse('$baseUrl/api/vehicles');
+    var url = Uri.parse('$baseUrl/api/filter/vehicles/in_progress');
     var response = await http.get(url, headers: {
       'Authorization': 'Bearer ${widget.token}',
     });

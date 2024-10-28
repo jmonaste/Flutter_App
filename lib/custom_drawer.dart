@@ -7,6 +7,7 @@ import 'manage_vehicle_brand.dart';
 import 'camera_page.dart';
 import 'home_page.dart';
 import 'main.dart'; // Importa para redirigir al LoginScreen
+import 'constants.dart';
 
 class CustomDrawer extends StatelessWidget {
   final String userName;
@@ -20,12 +21,10 @@ class CustomDrawer extends StatelessWidget {
     required this.token,  // Añadido para usar el token en la navegación
   }) : super(key: key);
 
-  // Función para manejar el logout
   Future<void> _logout(BuildContext context) async {
-    // Realizar la llamada al endpoint de logout
     try {
       final response = await http.post(
-        Uri.parse('http://127.0.0.1:8000/logout'),  // URL del logout
+        Uri.parse('$baseUrl/logout'),
         headers: {
           'Authorization': 'Bearer $token',
         },
