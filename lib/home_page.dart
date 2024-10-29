@@ -5,18 +5,17 @@ import 'custom_drawer.dart';
 import 'custom_footer.dart';
 import 'constants.dart';
 import 'camera_page.dart';
-import 'vehicle_detail_page.dart'; // Import the detail page
-import 'package:shared_preferences/shared_preferences.dart';  // Si usas SharedPreferences
+import 'vehicle_detail_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'main.dart';
-import 'vin_search_page.dart';
 
 class HomePage extends StatefulWidget {
-  final String token;  // Añadido para pasar el token
+  final String token;
 
   const HomePage({
     Key? key,
-    required this.token,  // Añadido para usar el token en la navegación
+    required this.token,
   }) : super(key: key);
 
   @override
@@ -26,16 +25,21 @@ class HomePage extends StatefulWidget {
 class HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  List<Map<String, dynamic>> _vehicles = [];  // Lista para almacenar los vehículos
+  List<Map<String, dynamic>> _vehicles = [];
 
   @override
   void initState() {
     super.initState();
-    _fetchVehicles();  // Llamada para obtener los vehículos
+    _fetchVehicles();
   }
 
-  Future<void> _fetchVehicles() async {
-    var url = Uri.parse('$baseUrl/api/filter/vehicles/in_progress');
+  Future<void> _fetchVehicles({String? vin}) async {
+    var url = Uri.parse(
+      vin != null && vin.isNotEmpty
+          ? '$baseUrl/api/filter/vehicles/in_progress/vin/$vin?skip=0&limit=10'
+          : '$baseUrl/api/filter/vehicles/in_progress',
+    );
+
     var response = await http.get(url, headers: {
       'Authorization': 'Bearer ${widget.token}',
     });
@@ -57,7 +61,7 @@ class HomePageState extends State<HomePage> {
         }
 
         vehiclesWithState.add({
-          'id': vehicle['id'] ?? -1, // Asignar -1 si el id no está presente
+          'id': vehicle['id'] ?? -1,
           'vin': vehicle['vin'] ?? 'Sin VIN',
           'brand': vehicle['model']?['brand']?['name'] ?? 'Marca Desconocida',
           'model': vehicle['model']?['name'] ?? 'Modelo Desconocido',
@@ -74,12 +78,47 @@ class HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _showSearchDialog() async {
+    String vinSearch = '';
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Buscar Vehículo por VIN'),
+          content: TextField(
+            onChanged: (value) {
+              vinSearch = value;
+            },
+            decoration: InputDecoration(
+              hintText: 'Introduce el VIN o parte de él',
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancelar'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Buscar'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _fetchVehicles(vin: vinSearch);  // Realiza la búsqueda con el VIN ingresado
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
 
-    // Lógica de navegación según el índice seleccionado
     if (index == 1) {
       Navigator.push(
         context,
@@ -143,7 +182,6 @@ class HomePageState extends State<HomePage> {
                     return GestureDetector(
                       onTap: () {
                         if (vehicle['id'] != -1) {
-                          // Navegar a la página de detalles del vehículo pasando solo vehicleId y token
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -162,108 +200,123 @@ class HomePageState extends State<HomePage> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        margin: EdgeInsets.symmetric(vertical: 10),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // VIN
-                              RichText(
-                                text: TextSpan(
-                                  children: [
-                                    TextSpan(
-                                      text: 'VIN: ',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.normal,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text: vehicle['vin'],
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Marca y Modelo
-                              RichText(
-                                text: TextSpan(
-                                  children: [
-                                    TextSpan(
-                                      text: 'Marca y Modelo: ',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.normal,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text: '${vehicle['brand']} ${vehicle['model']}',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              // Urgente
-                              Row(
+                        margin: EdgeInsets.symmetric(vertical: 5),
+                        child: Stack(
+                          children: [
+                            // Contenido principal de la Card
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    'Urgente: ',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.normal,
-                                      color: Colors.white,
+                                  RichText(
+                                    text: TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text: 'VIN: ',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.normal,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: vehicle['vin'],
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  Icon(
-                                    vehicle['is_urgent']
-                                        ? Icons.warning_amber_rounded
-                                        : Icons.check_circle,
-                                    color: vehicle['is_urgent'] ? Colors.redAccent : Colors.greenAccent,
-                                    size: 18,
+                                  RichText(
+                                    text: TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text: 'Marca y Modelo: ',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.normal,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: '${vehicle['brand']} ${vehicle['model']}',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Urgente: ',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.normal,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      Icon(
+                                        vehicle['is_urgent'] ? Icons.warning_amber_rounded : Icons.check_circle,
+                                        color: vehicle['is_urgent'] ? Colors.redAccent : Colors.greenAccent,
+                                        size: 18,
+                                      ),
+                                    ],
+                                  ),
+                                  RichText(
+                                    text: TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text: 'Estado: ',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.normal,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: vehicle['status'],
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
-                              // Estado
-                              RichText(
-                                text: TextSpan(
-                                  children: [
-                                    TextSpan(
-                                      text: 'Estado: ',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.normal,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    TextSpan(
-                                      text: vehicle['status'],
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
+                            ),
+                            // Franja de color en el lado derecho de la Card
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              bottom: 0,
+                              child: Container(
+                                width: 10, // Ancho de la franja
+                                decoration: BoxDecoration(
+                                  color: Colors.red, // Color de la franja (puede ser dinámico)
+                                  borderRadius: BorderRadius.only(
+                                    topRight: Radius.circular(12),
+                                    bottomRight: Radius.circular(12),
+                                  ),
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
+
                     );
                   },
                 ),
         ),
-        // Dentro de tu método build, en el Scaffold
         floatingActionButton: SpeedDial(
           animatedIcon: AnimatedIcons.menu_close,
           backgroundColor: Colors.blueAccent,
@@ -276,15 +329,7 @@ class HomePageState extends State<HomePage> {
               label: 'Buscar Vehículo',
               backgroundColor: Colors.blueAccent,
               labelStyle: TextStyle(color: Colors.white),
-              onTap: () {
-                // Navegar a VinSearchPage
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => VinSearchPage(token: widget.token),
-                  ),
-                );
-              },
+              onTap: _showSearchDialog, // Cambia a abrir el diálogo de búsqueda
             ),
             SpeedDialChild(
               child: Icon(Icons.add),
@@ -292,7 +337,6 @@ class HomePageState extends State<HomePage> {
               backgroundColor: Colors.blueAccent,
               labelStyle: TextStyle(color: Colors.white),
               onTap: () {
-                // Navegar a la página para añadir un vehículo
                 Navigator.push(
                   context,
                   MaterialPageRoute(
