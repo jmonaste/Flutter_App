@@ -25,8 +25,14 @@ class _CameraPageState extends State<CameraPage> {
   Uint8List? _webImage;
   String? _vin;
   List<Map<String, dynamic>> detectedCodes = [];
+
   List<Map<String, dynamic>> _models = [];  // Lista de modelos con id y name
   Map<String, dynamic>? _selectedModel;  // Modelo seleccionado en el desplegable
+
+  List<Map<String, dynamic>> _colors = [];  // Lista de colores con id y name
+  Map<String, dynamic>? _selectedColor;  // Color seleccionado en el desplegable
+
+
   bool _isUrgent = false;  // Booleano para manejar la urgencia del vehículo
   final picker = ImagePicker();
   final TextEditingController _vinController = TextEditingController();
@@ -38,6 +44,7 @@ class _CameraPageState extends State<CameraPage> {
   @override
   void initState() {
     super.initState();
+    _fetchColors();  // Llamada a la API para obtener los modelos de vehículos
     _fetchModels();  // Llamada a la API para obtener los modelos de vehículos
   }
 
@@ -57,7 +64,7 @@ class _CameraPageState extends State<CameraPage> {
     });
 
     if (response.statusCode == 200) {
-      List<dynamic> modelsJson = jsonDecode(response.body);
+      List<dynamic> modelsJson = jsonDecode(utf8.decode(response.bodyBytes));
       setState(() {
         _models = modelsJson.map((model) {
           return {
@@ -71,6 +78,38 @@ class _CameraPageState extends State<CameraPage> {
       _showErrorDialog('Error al obtener los modelos de vehículos.');
     }
   }
+
+
+  // Método para obtener los colores de vehículos desde la API
+  Future<void> _fetchColors() async {
+    var url = Uri.parse('$baseUrl/api/colors');
+    try {
+      var response = await http.get(url, headers: {
+        'Authorization': 'Bearer ${widget.token}',
+      });
+
+      if (response.statusCode == 200) {
+        List<dynamic> colorsJson = jsonDecode(utf8.decode(response.bodyBytes));
+        setState(() {
+          _colors = colorsJson.map((color) {
+            return {
+              'id': color['id'],  // Guardamos el id del color
+              'name': color['name'],  // Nombre del color
+              'hex_code': color['hex_code'],  // Código hexadecimal del color
+            };
+          }).toList();
+        });
+      } else {
+        print('Error fetching colors. Status: ${response.statusCode}');
+        _showErrorDialog('Error al obtener los colores de vehículos.');
+      }
+    } catch (e) {
+      print('Exception while fetching colors: $e');
+      _showErrorDialog('Hubo un problema al obtener los colores de vehículos.');
+    }
+  }
+
+
 
   // Método para mostrar el selector de origen de la imagen (Cámara o Galería)
   Future<void> _chooseImageSource() async {
@@ -170,7 +209,7 @@ class _CameraPageState extends State<CameraPage> {
       });
 
       if (response.statusCode == 200) {
-        var decodedResponse = jsonDecode(response.body);
+        var decodedResponse = jsonDecode(utf8.decode(response.bodyBytes));
         setState(() {
           List<dynamic> detectedCodesJson = decodedResponse['detected_codes'];
           detectedCodes = detectedCodesJson.map((code) {
@@ -183,7 +222,7 @@ class _CameraPageState extends State<CameraPage> {
           _showDetectedCodesDialog();
         });
       } else if (response.statusCode == 400) {
-        var decodedResponse = jsonDecode(response.body);
+        var decodedResponse = jsonDecode(utf8.decode(response.bodyBytes));
         setState(() {
           detectedCodes = [];
           if (decodedResponse['error'] == 'No QR or Barcode detected') {
@@ -211,12 +250,14 @@ class _CameraPageState extends State<CameraPage> {
   Future<void> _registerVehicle() async {
     // Usamos el valor del VIN que está en el TextField, no el seleccionado
     String vinToSend = _vinController.text.trim();
-    if (vinToSend.isEmpty || _selectedModel == null) {
+
+    if (vinToSend.isEmpty || _selectedModel == null || _selectedColor == null) {
       _showErrorDialog('Por favor, ingrese el VIN y seleccione un modelo de vehículo.');
       return; // Evita hacer la petición si no hay VIN o modelo seleccionado
     }
 
     int modelId = _selectedModel!['id'];  // Recupera el ID del modelo seleccionado
+    int colorId = _selectedColor!['id'];    // Recupera el ID del color seleccionado
 
     setState(() {
       _isLoading = true;  // Activa el spinner durante la solicitud
@@ -233,6 +274,7 @@ class _CameraPageState extends State<CameraPage> {
         body: jsonEncode({
           'vehicle_model_id': modelId,
           'vin': vinToSend,  // Usar el VIN del TextField
+          'color_id': colorId,  // Agregar el color_id
           'is_urgent': _isUrgent,
         }),
       );
@@ -244,7 +286,7 @@ class _CameraPageState extends State<CameraPage> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         _showSuccessDialog();
       } else {
-        var decodedResponse = jsonDecode(response.body);
+        var decodedResponse = jsonDecode(utf8.decode(response.bodyBytes));
         String errorMessage = 'Error al dar de alta el vehículo. Código: ${response.statusCode}';
         if (decodedResponse.containsKey('detail')) {
           errorMessage = decodedResponse['detail'];
@@ -471,6 +513,43 @@ class _CameraPageState extends State<CameraPage> {
                     },
                   ),
                   SizedBox(height: 20),
+                  // Dropdown para seleccionar el color del vehículo
+                  DropdownButtonFormField<Map<String, dynamic>>(
+                    decoration: InputDecoration(
+                      hintText: 'Seleccionar color',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                      fillColor: Colors.black54,  // Fondo oscuro
+                    ),
+                    dropdownColor: Colors.black54,
+                    value: _selectedColor,
+                    items: _colors.map((color) {
+                      return DropdownMenuItem<Map<String, dynamic>>(
+                        value: color,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: Color(int.parse(color['hex_code'].substring(1, 7), radix: 16) + 0xFF000000),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            Text(color['name'], style: TextStyle(color: Colors.white)),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (Map<String, dynamic>? newValue) {
+                      setState(() {
+                        _selectedColor = newValue!;
+                      });
+                    },
+                  ),
                   // Switch para indicar si el vehículo es urgente
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
