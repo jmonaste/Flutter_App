@@ -1,21 +1,21 @@
+// lib/vin_search_page.dart
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart'; // Importa Provider
+import 'package:dio/dio.dart'; // Importa Dio
 import 'package:image_picker/image_picker.dart';
-import 'package:http_parser/http_parser.dart';
-import 'constants.dart';
-import 'custom_drawer.dart';  // Importa el CustomDrawer
-import 'custom_footer.dart';  // Importa el CustomFooter
-import 'home_page.dart';      // Importa HomePage para la navegación de "Inicio"
+import 'package:http_parser/http_parser.dart'; // Importa HttpParser si es necesario
+import 'api_service.dart'; // Importa ApiService
+import 'custom_drawer.dart'; // Importa CustomDrawer
+import 'custom_footer.dart'; // Importa CustomFooter
+import 'home_page.dart'; // Importa HomePage para la navegación de "Inicio"
 import 'camera_page.dart';
 import 'vehicle_detail_page.dart'; // Importa la página de detalle del vehículo
 
 class VinSearchPage extends StatefulWidget {
-  final String token;
-
-  const VinSearchPage({Key? key, required this.token}) : super(key: key);
+  const VinSearchPage({Key? key}) : super(key: key);
 
   @override
   _VinSearchPageState createState() => _VinSearchPageState();
@@ -28,7 +28,7 @@ class _VinSearchPageState extends State<VinSearchPage> {
   List<Map<String, dynamic>> detectedCodes = [];
   final picker = ImagePicker();
   final TextEditingController _vinController = TextEditingController();
-  int _selectedIndex = 0;  // Índice del BottomNavigationBar
+  int _selectedIndex = 0; // Índice del BottomNavigationBar
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -68,32 +68,41 @@ class _VinSearchPageState extends State<VinSearchPage> {
       return;
     }
 
-    var uri = Uri.parse('$baseUrl/scan');
-    var request = http.MultipartRequest('POST', uri);
-
-    if (kIsWeb) {
-      request.files.add(http.MultipartFile.fromBytes(
-        'file',
-        _webImage!,
-        filename: 'qr_sample.jpeg',
-        contentType: MediaType('image', 'jpeg'),
-      ));
-    } else {
-      request.files.add(await http.MultipartFile.fromPath(
-        'file',
-        _imageFile!.path,
-        contentType: MediaType('image', 'jpeg'),
-      ));
-    }
-
-    request.headers['Authorization'] = 'Bearer ${widget.token}';
+    final apiService = Provider.of<ApiService>(context, listen: false);
 
     try {
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
+      FormData formData = FormData();
+
+      if (kIsWeb) {
+        formData.files.add(MapEntry(
+          'file',
+          MultipartFile.fromBytes(
+            _webImage!,
+            filename: 'qr_sample.jpeg',
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        ));
+      } else {
+        formData.files.add(MapEntry(
+          'file',
+          await MultipartFile.fromFile(
+            _imageFile!.path,
+            filename: 'qr_sample.jpeg',
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        ));
+      }
+
+      final response = await apiService.dio.post(
+        '/scan',
+        data: formData,
+        options: Options(
+          contentType: 'multipart/form-data',
+        ),
+      );
 
       if (response.statusCode == 200) {
-        var decodedResponse = jsonDecode(response.body);
+        var decodedResponse = response.data;
         setState(() {
           List<dynamic> detectedCodesJson = decodedResponse['detected_codes'];
           detectedCodes = detectedCodesJson.map((code) {
@@ -106,7 +115,7 @@ class _VinSearchPageState extends State<VinSearchPage> {
           _showDetectedCodesDialog();
         });
       } else if (response.statusCode == 400) {
-        var decodedResponse = jsonDecode(response.body);
+        var decodedResponse = response.data;
         setState(() {
           detectedCodes = [];
           if (decodedResponse['error'] == 'No QR or Barcode detected') {
@@ -119,7 +128,23 @@ class _VinSearchPageState extends State<VinSearchPage> {
         print('Error al subir la imagen. Código de estado: ${response.statusCode}');
         _showErrorDialog('Error al subir la imagen. Por favor, inténtelo de nuevo.');
       }
+    } on DioError catch (e) {
+      if (e.response != null && e.response!.statusCode == 400) {
+        var decodedResponse = e.response!.data;
+        setState(() {
+          detectedCodes = [];
+          if (decodedResponse['error'] == 'No QR or Barcode detected') {
+            _showErrorDialog('No se detectaron códigos QR o de barras. Introduzca el VIN manualmente.');
+          } else if (decodedResponse['detail'] == 'Unsupported file type') {
+            _showErrorDialog('El tipo de archivo no es compatible.');
+          }
+        });
+      } else {
+        print('Error al subir la imagen: ${e.message}');
+        _showErrorDialog('Error al conectar con el servidor. Por favor, inténtelo más tarde.');
+      }
     } catch (e) {
+      print('Excepción al subir la imagen: $e');
       _showErrorDialog('Error al conectar con el servidor. Por favor, inténtelo más tarde.');
     }
   }
@@ -131,17 +156,13 @@ class _VinSearchPageState extends State<VinSearchPage> {
       return;
     }
 
-    var url = Uri.parse('$baseUrl/api/vehicles/search_by_vin/$vinToSearch');
+    final apiService = Provider.of<ApiService>(context, listen: false);
+
     try {
-      var response = await http.get(
-        url,
-        headers: {
-          'Authorization': 'Bearer ${widget.token}',
-        },
-      );
+      final response = await apiService.dio.get('/api/vehicles/search_by_vin/$vinToSearch');
 
       if (response.statusCode == 200) {
-        var vehicleData = jsonDecode(response.body);
+        var vehicleData = response.data;
 
         // Navegar a la página de detalles del vehículo
         Navigator.push(
@@ -149,7 +170,6 @@ class _VinSearchPageState extends State<VinSearchPage> {
           MaterialPageRoute(
             builder: (context) => VehicleDetailPage(
               vehicleId: vehicleData['id'],
-              token: widget.token,
             ),
           ),
         );
@@ -158,7 +178,15 @@ class _VinSearchPageState extends State<VinSearchPage> {
       } else {
         _showErrorDialog('Error al buscar el vehículo. Código: ${response.statusCode}');
       }
+    } on DioError catch (e) {
+      if (e.response != null && e.response!.statusCode == 404) {
+        _showErrorDialog('No se encontró un vehículo con el VIN proporcionado.');
+      } else {
+        print('Error al buscar el vehículo: ${e.message}');
+        _showErrorDialog('Error al conectar con el servidor. Por favor, inténtelo más tarde.');
+      }
     } catch (e) {
+      print('Excepción al buscar el vehículo: $e');
       _showErrorDialog('Error al conectar con el servidor. Por favor, inténtelo más tarde.');
     }
   }
@@ -169,7 +197,7 @@ class _VinSearchPageState extends State<VinSearchPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: Colors.black87,  // Fondo oscuro
+          backgroundColor: Colors.black87, // Fondo oscuro
           title: Text('Error', style: TextStyle(color: Colors.white)),
           content: Text(message, style: TextStyle(color: Colors.white70)),
           actions: <Widget>[
@@ -191,10 +219,10 @@ class _VinSearchPageState extends State<VinSearchPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: Colors.black87,  // Fondo oscuro
+          backgroundColor: Colors.black87, // Fondo oscuro
           title: Text(
             'Selecciona un código',
-            style: TextStyle(color: Colors.white),  // Texto blanco en el título
+            style: TextStyle(color: Colors.white), // Texto blanco en el título
           ),
           content: detectedCodes.isEmpty
               ? Column(
@@ -202,12 +230,12 @@ class _VinSearchPageState extends State<VinSearchPage> {
                   children: [
                     Text(
                       'No se detectó ningún código VIN.',
-                      style: TextStyle(color: Colors.white70),  // Texto gris claro
+                      style: TextStyle(color: Colors.white70), // Texto gris claro
                     ),
                     SizedBox(height: 10),
                     Text(
                       'Por favor, introduzca el VIN manualmente.',
-                      style: TextStyle(color: Colors.white70),  // Texto gris claro
+                      style: TextStyle(color: Colors.white70), // Texto gris claro
                     ),
                   ],
                 )
@@ -217,11 +245,11 @@ class _VinSearchPageState extends State<VinSearchPage> {
                     return ListTile(
                       title: Text(
                         'Tipo: ${code['type']}',
-                        style: TextStyle(color: Colors.white),  // Texto blanco para el tipo
+                        style: TextStyle(color: Colors.white), // Texto blanco para el tipo
                       ),
                       subtitle: Text(
                         'Código: ${code['data']}',
-                        style: TextStyle(color: Colors.white70),  // Texto gris claro para el código
+                        style: TextStyle(color: Colors.white70), // Texto gris claro para el código
                       ),
                       onTap: () {
                         setState(() {
@@ -237,7 +265,7 @@ class _VinSearchPageState extends State<VinSearchPage> {
             TextButton(
               child: Text(
                 'Cerrar',
-                style: TextStyle(color: Colors.blueAccent),  // Texto del botón
+                style: TextStyle(color: Colors.blueAccent), // Texto del botón
               ),
               onPressed: () {
                 Navigator.of(context).pop();
@@ -259,7 +287,7 @@ class _VinSearchPageState extends State<VinSearchPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => HomePage(token: widget.token),
+          builder: (context) => HomePage(),
         ),
       );
     } else if (index == 1) {
@@ -267,11 +295,14 @@ class _VinSearchPageState extends State<VinSearchPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => CameraPage(token: widget.token),
+          builder: (context) => CameraPage(),
         ),
       );
     } else if (index == 2) {
       // Lógica para el botón "Cuenta"
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Funcionalidad de Cuenta en desarrollo.')),
+      );
     }
   }
 
@@ -290,9 +321,11 @@ class _VinSearchPageState extends State<VinSearchPage> {
       ),
       drawer: CustomDrawer(
         userName: 'Nombre del usuario',
-        token: widget.token,
         onProfileTap: () {
           // Lógica para ver el perfil
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Funcionalidad de perfil en desarrollo.')),
+          );
         },
       ),
       body: Padding(
@@ -307,15 +340,15 @@ class _VinSearchPageState extends State<VinSearchPage> {
                 hintText: 'Introducir VIN',
                 suffixIcon: IconButton(
                   icon: Icon(Icons.camera_alt),
-                  onPressed: _scanQRorBarcode,  // Escaneo QR al presionar el ícono de cámara
+                  onPressed: _scanQRorBarcode, // Escaneo QR al presionar el ícono de cámara
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 filled: true,
-                fillColor: Colors.black54,  // Fondo oscuro
+                fillColor: Colors.black54, // Fondo oscuro
               ),
-              style: TextStyle(color: Colors.white),  // Texto en blanco
+              style: TextStyle(color: Colors.white), // Texto en blanco
             ),
             SizedBox(height: 20),
             // Botón para buscar el vehículo

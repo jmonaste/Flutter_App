@@ -1,20 +1,21 @@
+// lib/camera_page.dart
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data'; // Para Uint8List
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:dio/dio.dart'; // Importa Dio
 import 'package:http_parser/http_parser.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'constants.dart';
+import 'api_service.dart'; // Importa ApiService
 import 'custom_drawer.dart';  // Importa el CustomDrawer
 import 'custom_footer.dart';  // Importa el CustomFooter
 import 'home_page.dart';  // Importa HomePage para la navegación de "Inicio"
 
 class CameraPage extends StatefulWidget {
-  final String token;
-
-  const CameraPage({Key? key, required this.token}) : super(key: key);
+  const CameraPage({Key? key}) : super(key: key);
 
   @override
   _CameraPageState createState() => _CameraPageState();
@@ -32,7 +33,6 @@ class _CameraPageState extends State<CameraPage> {
   List<Map<String, dynamic>> _colors = [];  // Lista de colores con id y name
   Map<String, dynamic>? _selectedColor;  // Color seleccionado en el desplegable
 
-
   bool _isUrgent = false;  // Booleano para manejar la urgencia del vehículo
   final picker = ImagePicker();
   final TextEditingController _vinController = TextEditingController();
@@ -44,7 +44,7 @@ class _CameraPageState extends State<CameraPage> {
   @override
   void initState() {
     super.initState();
-    _fetchColors();  // Llamada a la API para obtener los modelos de vehículos
+    _fetchColors();  // Llamada a la API para obtener los colores de vehículos
     _fetchModels();  // Llamada a la API para obtener los modelos de vehículos
   }
 
@@ -58,38 +58,37 @@ class _CameraPageState extends State<CameraPage> {
 
   // Método para obtener los modelos de vehículos desde la API
   Future<void> _fetchModels() async {
-    var url = Uri.parse('$baseUrl/api/models');
-    var response = await http.get(url, headers: {
-      'Authorization': 'Bearer ${widget.token}',
-    });
-
-    if (response.statusCode == 200) {
-      List<dynamic> modelsJson = jsonDecode(utf8.decode(response.bodyBytes));
-      setState(() {
-        _models = modelsJson.map((model) {
-          return {
-            'id': model['id'],  // Guardamos el id del modelo
-            'name': '${model['brand']['name']} ${model['name']}',  // Formato "Brand Model"
-          };
-        }).toList();
-      });
-    } else {
-      print('Error fetching models. Status: ${response.statusCode}');
-      _showErrorDialog('Error al obtener los modelos de vehículos.');
+    final apiService = Provider.of<ApiService>(context, listen: false);
+    try {
+      final response = await apiService.dio.get('/api/models');
+      if (response.statusCode == 200) {
+        List<dynamic> modelsJson = response.data;
+        setState(() {
+          _models = modelsJson.map((model) {
+            return {
+              'id': model['id'],  // Guardamos el id del modelo
+              'name': '${model['brand']['name']} ${model['name']}',  // Formato "Brand Model"
+            };
+          }).toList();
+        });
+      } else {
+        print('Error fetching models. Status: ${response.statusCode}');
+        _showErrorDialog('Error al obtener los modelos de vehículos.');
+      }
+    } catch (e) {
+      print('Exception while fetching models: $e');
+      _showErrorDialog('Hubo un problema al obtener los modelos de vehículos.');
     }
   }
 
-
   // Método para obtener los colores de vehículos desde la API
   Future<void> _fetchColors() async {
-    var url = Uri.parse('$baseUrl/api/colors');
+    final apiService = Provider.of<ApiService>(context, listen: false);
     try {
-      var response = await http.get(url, headers: {
-        'Authorization': 'Bearer ${widget.token}',
-      });
+      final response = await apiService.dio.get('/api/colors');
 
       if (response.statusCode == 200) {
-        List<dynamic> colorsJson = jsonDecode(utf8.decode(response.bodyBytes));
+        List<dynamic> colorsJson = response.data;
         setState(() {
           _colors = colorsJson.map((color) {
             return {
@@ -108,8 +107,6 @@ class _CameraPageState extends State<CameraPage> {
       _showErrorDialog('Hubo un problema al obtener los colores de vehículos.');
     }
   }
-
-
 
   // Método para mostrar el selector de origen de la imagen (Cámara o Galería)
   Future<void> _chooseImageSource() async {
@@ -180,36 +177,37 @@ class _CameraPageState extends State<CameraPage> {
       _isLoading = true;  // Activa el spinner
     });
 
+    final apiService = Provider.of<ApiService>(context, listen: false);
     try {
-      var uri = Uri.parse('$baseUrl/scan');
-      var request = http.MultipartRequest('POST', uri);
-
+      FormData formData;
       if (kIsWeb) {
-        request.files.add(http.MultipartFile.fromBytes(
-          'file',
-          _webImage!,
-          filename: 'qr_sample.jpeg',
-          contentType: MediaType('image', 'jpeg'),
-        ));
+        formData = FormData.fromMap({
+          'file': MultipartFile.fromBytes(
+            _webImage!,
+            filename: 'qr_sample.jpeg',
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        });
       } else {
-        request.files.add(await http.MultipartFile.fromPath(
-          'file',
-          _imageFile!.path,
-          contentType: MediaType('image', 'jpeg'),
-        ));
+        formData = FormData.fromMap({
+          'file': await MultipartFile.fromFile(
+            _imageFile!.path,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        });
       }
 
-      request.headers['Authorization'] = 'Bearer ${widget.token}';
-
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
+      final response = await apiService.dio.post(
+        '/scan',
+        data: formData,
+      );
 
       setState(() {
         _isLoading = false;  // Desactiva el spinner
       });
 
       if (response.statusCode == 200) {
-        var decodedResponse = jsonDecode(utf8.decode(response.bodyBytes));
+        var decodedResponse = response.data;
         setState(() {
           List<dynamic> detectedCodesJson = decodedResponse['detected_codes'];
           detectedCodes = detectedCodesJson.map((code) {
@@ -222,7 +220,7 @@ class _CameraPageState extends State<CameraPage> {
           _showDetectedCodesDialog();
         });
       } else if (response.statusCode == 400) {
-        var decodedResponse = jsonDecode(utf8.decode(response.bodyBytes));
+        var decodedResponse = response.data;
         setState(() {
           detectedCodes = [];
           if (decodedResponse['error'] == 'No QR or Barcode detected') {
@@ -248,7 +246,6 @@ class _CameraPageState extends State<CameraPage> {
 
   // Método para registrar el vehículo en el servidor
   Future<void> _registerVehicle() async {
-    // Usamos el valor del VIN que está en el TextField, no el seleccionado
     String vinToSend = _vinController.text.trim();
 
     if (vinToSend.isEmpty || _selectedModel == null || _selectedColor == null) {
@@ -263,20 +260,17 @@ class _CameraPageState extends State<CameraPage> {
       _isLoading = true;  // Activa el spinner durante la solicitud
     });
 
+    final apiService = Provider.of<ApiService>(context, listen: false);
+
     try {
-      var url = Uri.parse('$baseUrl/api/vehicles');
-      var response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${widget.token}',
-        },
-        body: jsonEncode({
+      final response = await apiService.dio.post(
+        '/api/vehicles',
+        data: {
           'vehicle_model_id': modelId,
-          'vin': vinToSend,  // Usar el VIN del TextField
-          'color_id': colorId,  // Agregar el color_id
+          'vin': vinToSend,
+          'color_id': colorId,
           'is_urgent': _isUrgent,
-        }),
+        },
       );
 
       setState(() {
@@ -286,7 +280,7 @@ class _CameraPageState extends State<CameraPage> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         _showSuccessDialog();
       } else {
-        var decodedResponse = jsonDecode(utf8.decode(response.bodyBytes));
+        var decodedResponse = response.data;
         String errorMessage = 'Error al dar de alta el vehículo. Código: ${response.statusCode}';
         if (decodedResponse.containsKey('detail')) {
           errorMessage = decodedResponse['detail'];
@@ -408,7 +402,7 @@ class _CameraPageState extends State<CameraPage> {
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => HomePage(token: widget.token),
+                    builder: (context) => HomePage(),
                   ),
                   (Route<dynamic> route) => false,
                 );
@@ -430,7 +424,7 @@ class _CameraPageState extends State<CameraPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => HomePage(token: widget.token),
+          builder: (context) => HomePage(),
         ),
       );
     } else if (index == 2) {
@@ -444,7 +438,7 @@ class _CameraPageState extends State<CameraPage> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: Text('Camera Page', style: Theme.of(context).textTheme.titleLarge),
+        title: Text('Añadir Vehículo', style: Theme.of(context).textTheme.titleLarge),
         leading: IconButton(
           icon: Icon(Icons.account_circle),
           onPressed: () {
@@ -457,7 +451,6 @@ class _CameraPageState extends State<CameraPage> {
         onProfileTap: () {
           // Lógica para ver el perfil
         },
-        token: widget.token,
       ),
       body: Stack(
         children: [
@@ -574,7 +567,7 @@ class _CameraPageState extends State<CameraPage> {
                   SizedBox(height: 20),
                   // Botón para dar de alta el vehículo
                   ElevatedButton(
-                    onPressed: (_vinController.text.isNotEmpty && _selectedModel != null)
+                    onPressed: (_vinController.text.isNotEmpty && _selectedModel != null && _selectedColor != null)
                         ? _registerVehicle
                         : null,
                     style: ElevatedButton.styleFrom(

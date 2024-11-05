@@ -1,12 +1,13 @@
+// lib/manage_vehicle_models.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'constants.dart'; // Asegúrate de tener este archivo con la variable baseUrl
+import 'package:provider/provider.dart'; // Importa Provider
+import 'package:dio/dio.dart'; // Importa Dio
+import 'api_service.dart'; // Importa ApiService
+import 'custom_drawer.dart'; // Importa CustomDrawer si lo usas
 
 class VehicleModelManagePage extends StatefulWidget {
-  final String token;
-
-  const VehicleModelManagePage({Key? key, required this.token}) : super(key: key);
+  const VehicleModelManagePage({Key? key}) : super(key: key);
 
   @override
   _VehicleModelManagePageState createState() => _VehicleModelManagePageState();
@@ -29,16 +30,12 @@ class _VehicleModelManagePageState extends State<VehicleModelManagePage> {
 
   /// Obtiene la lista de marcas de vehículos desde la API
   Future<void> _fetchVehicleBrands() async {
+    final apiService = Provider.of<ApiService>(context, listen: false);
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/brands/'), // URL corregida
-        headers: <String, String>{
-          'Authorization': 'Bearer ${widget.token}',
-        },
-      );
+      final response = await apiService.dio.get('/api/brands/');
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
+        final List<dynamic> data = response.data;
         List<dynamic> sortedBrands = data.map((brand) {
           return {
             'id': brand['id'],
@@ -69,16 +66,12 @@ class _VehicleModelManagePageState extends State<VehicleModelManagePage> {
 
   /// Obtiene la lista de tipos de vehículos desde la API
   Future<void> _fetchVehicleTypes() async {
+    final apiService = Provider.of<ApiService>(context, listen: false);
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/vehicle-types/'), // URL de tipos de vehículos
-        headers: <String, String>{
-          'Authorization': 'Bearer ${widget.token}',
-        },
-      );
+      final response = await apiService.dio.get('/api/vehicle-types/');
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
+        final List<dynamic> data = response.data;
         List<dynamic> sortedTypes = data.map((type) {
           return {
             'id': type['id'],
@@ -114,16 +107,12 @@ class _VehicleModelManagePageState extends State<VehicleModelManagePage> {
       errorMessage = '';
     });
 
+    final apiService = Provider.of<ApiService>(context, listen: false);
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/models/'), // URL corregida
-        headers: <String, String>{
-          'Authorization': 'Bearer ${widget.token}',
-        },
-      );
+      final response = await apiService.dio.get('/api/models/');
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
+        final List<dynamic> data = response.data;
 
         // Mapear y ordenar los modelos alfabéticamente por nombre
         List<dynamic> sortedModels = data.map((model) {
@@ -177,18 +166,16 @@ class _VehicleModelManagePageState extends State<VehicleModelManagePage> {
       errorMessage = '';
     });
 
+    final apiService = Provider.of<ApiService>(context, listen: false);
+
     try {
-      final response = await http.put(
-        Uri.parse('$baseUrl/api/models/$id'), // URL corregida
-        headers: <String, String>{
-          'Content-Type': 'application/json', // Corregido de 'Content-Model' a 'Content-Type'
-          'Authorization': 'Bearer ${widget.token}',
-        },
-        body: jsonEncode(<String, dynamic>{
+      final response = await apiService.dio.put(
+        '/api/models/$id',
+        data: {
           'name': newModelName,
           'brand_id': newBrandId,
           'type_id': newTypeId,
-        }),
+        },
       );
 
       if (response.statusCode == 200) {
@@ -223,13 +210,10 @@ class _VehicleModelManagePageState extends State<VehicleModelManagePage> {
       errorMessage = '';
     });
 
+    final apiService = Provider.of<ApiService>(context, listen: false);
+
     try {
-      final response = await http.delete(
-        Uri.parse('$baseUrl/api/models/$id'), // URL corregida
-        headers: <String, String>{
-          'Authorization': 'Bearer ${widget.token}',
-        },
-      );
+      final response = await apiService.dio.delete('/api/models/$id');
 
       if (response.statusCode == 200) {
         // Muestra un mensaje de éxito
@@ -263,18 +247,16 @@ class _VehicleModelManagePageState extends State<VehicleModelManagePage> {
       errorMessage = '';
     });
 
+    final apiService = Provider.of<ApiService>(context, listen: false);
+
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/models/'), // URL corregida
-        headers: <String, String>{
-          'Content-Type': 'application/json', // Corregido de 'Content-Model' a 'Content-Type'
-          'Authorization': 'Bearer ${widget.token}',
-        },
-        body: jsonEncode(<String, dynamic>{
+      final response = await apiService.dio.post(
+        '/api/models/',
+        data: {
           'name': modelName,
           'brand_id': brandId,
           'type_id': typeId,
-        }),
+        },
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -334,7 +316,7 @@ class _VehicleModelManagePageState extends State<VehicleModelManagePage> {
     );
   }
 
-  /// Muestra un diálogo para actualizar el nombre y marca de un modelo
+  /// Muestra un diálogo para actualizar el nombre, marca y tipo de un modelo
   void _showUpdateDialog(int id, String currentModelName, int currentBrandId, int currentTypeId) {
     final TextEditingController _controller =
         TextEditingController(text: currentModelName);
@@ -637,6 +619,12 @@ class _VehicleModelManagePageState extends State<VehicleModelManagePage> {
       appBar: AppBar(
         title: Text('Modelos de Vehículos'),
         centerTitle: true,
+      ),
+      drawer: CustomDrawer(
+        userName: 'Nombre del usuario',
+        onProfileTap: () {
+          // Lógica para ver el perfil
+        },
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())

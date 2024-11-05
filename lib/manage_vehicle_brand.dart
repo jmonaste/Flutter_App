@@ -1,12 +1,13 @@
+// lib/manage_vehicle_brand.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'constants.dart';
+import 'package:provider/provider.dart'; // Importa Provider
+import 'package:dio/dio.dart'; // Importa Dio
+import 'api_service.dart'; // Importa ApiService
+import 'custom_drawer.dart'; // Importa CustomDrawer si lo usas
 
 class VehicleBrandManagePage extends StatefulWidget {
-  final String token;
-
-  const VehicleBrandManagePage({Key? key, required this.token}) : super(key: key);
+  const VehicleBrandManagePage({Key? key}) : super(key: key);
 
   @override
   _VehicleBrandManagePageState createState() => _VehicleBrandManagePageState();
@@ -30,28 +31,24 @@ class _VehicleBrandManagePageState extends State<VehicleBrandManagePage> {
       errorMessage = '';
     });
 
+    final apiService = Provider.of<ApiService>(context, listen: false);
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/brands'), // URL corregida
-        headers: <String, String>{
-          'Authorization': 'Bearer ${widget.token}',
-        },
-      );
+      final response = await apiService.dio.get('/api/brands/');
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
+        final List<dynamic> data = response.data;
 
         // Mapear y ordenar las marcas alfabéticamente por nombre
         List<dynamic> sortedBrands = data.map((brand) {
           return {
             'id': brand['id'],
-            'name': brand['name'], // Usar 'name' en lugar de 'Brand_name'
+            'name': brand['name'],
             'created_at': brand['created_at'],
             'updated_at': brand['updated_at'],
           };
         }).toList();
 
-        sortedBrands.sort((a, b) => a['name'].toString().compareTo(b['name'].toString()));
+        sortedBrands.sort((a, b) => a['name'].toString().toLowerCase().compareTo(b['name'].toString().toLowerCase()));
 
         setState(() {
           vehicleBrands = sortedBrands;
@@ -80,14 +77,12 @@ class _VehicleBrandManagePageState extends State<VehicleBrandManagePage> {
       errorMessage = '';
     });
 
+    final apiService = Provider.of<ApiService>(context, listen: false);
+
     try {
-      final response = await http.put(
-        Uri.parse('$baseUrl/api/brands/$id'), // URL corregida
-        headers: <String, String>{
-          'Content-Type': 'application/json', // Corregido de 'Content-Model' a 'Content-Type'
-          'Authorization': 'Bearer ${widget.token}',
-        },
-        body: jsonEncode(<String, String>{'name': newBrandName}), // Usar 'name'
+      final response = await apiService.dio.put(
+        '/api/brands/$id',
+        data: {'name': newBrandName},
       );
 
       if (response.statusCode == 200) {
@@ -122,13 +117,10 @@ class _VehicleBrandManagePageState extends State<VehicleBrandManagePage> {
       errorMessage = '';
     });
 
+    final apiService = Provider.of<ApiService>(context, listen: false);
+
     try {
-      final response = await http.delete(
-        Uri.parse('$baseUrl/api/brands/$id'), // URL corregida
-        headers: <String, String>{
-          'Authorization': 'Bearer ${widget.token}',
-        },
-      );
+      final response = await apiService.dio.delete('/api/brands/$id');
 
       if (response.statusCode == 200) {
         // Muestra un mensaje de éxito
@@ -162,16 +154,12 @@ class _VehicleBrandManagePageState extends State<VehicleBrandManagePage> {
       errorMessage = '';
     });
 
+    final apiService = Provider.of<ApiService>(context, listen: false);
+
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/brands'), // URL corregida
-        headers: <String, String>{
-          'Content-Type': 'application/json', // Corregido de 'Content-Model' a 'Content-Type'
-          'Authorization': 'Bearer ${widget.token}',
-        },
-        body: jsonEncode(<String, String>{
-          'name': brandName, // Usar 'name' en lugar de 'Brand_name'
-        }),
+      final response = await apiService.dio.post(
+        '/api/brands/',
+        data: {'name': brandName},
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -197,52 +185,6 @@ class _VehicleBrandManagePageState extends State<VehicleBrandManagePage> {
         isLoading = false;
       });
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Marcas de Vehículos'),
-        centerTitle: true,
-      ),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : errorMessage.isNotEmpty
-              ? Center(
-                  child:
-                      Text(errorMessage, style: TextStyle(color: Colors.red)),
-                )
-              : ListView.builder(
-                  itemCount: vehicleBrands.length,
-                  itemBuilder: (context, index) {
-                    final vehicleBrand = vehicleBrands[index];
-                    return Card(
-                      margin:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: ListTile(
-                        title: Align(
-                          alignment:
-                              Alignment.center, // Centramos el texto dentro del ListTile
-                          child: Text(vehicleBrand['name']),
-                        ),
-                        onTap: () {
-                          _showOptionsDialog(
-                              vehicleBrand['id'], vehicleBrand['name']);
-                        },
-                      ),
-                    );
-                  },
-                ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _showAddDialog(); // Llamamos a _showAddDialog cuando se presiona el botón
-        },
-        tooltip: 'Añadir nueva marca de vehículo',
-        backgroundColor: Colors.blue, // Cambiar color de fondo a azul
-        child: Icon(Icons.add, color: Colors.white), // Ícono blanco
-      ),
-    );
   }
 
   /// Muestra un diálogo con opciones para actualizar o eliminar una marca
@@ -324,8 +266,8 @@ class _VehicleBrandManagePageState extends State<VehicleBrandManagePage> {
                   // Muestra un mensaje de error si el campo está vacío
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content: Text(
-                            'El nombre de la marca no puede estar vacío')),
+                        content:
+                            Text('El nombre de la marca no puede estar vacío')),
                   );
                 }
               },
@@ -426,6 +368,58 @@ class _VehicleBrandManagePageState extends State<VehicleBrandManagePage> {
           ],
         );
       },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Marcas de Vehículos'),
+        centerTitle: true,
+      ),
+      drawer: CustomDrawer(
+        userName: 'Nombre del usuario',
+        onProfileTap: () {
+          // Lógica para ver el perfil
+        },
+      ),
+      body: isLoading
+          ? Center(child: CircularProgressIndicator())
+          : errorMessage.isNotEmpty
+              ? Center(
+                  child:
+                      Text(errorMessage, style: TextStyle(color: Colors.red)),
+                )
+              : ListView.builder(
+                  itemCount: vehicleBrands.length,
+                  itemBuilder: (context, index) {
+                    final vehicleBrand = vehicleBrands[index];
+                    return Card(
+                      margin:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: ListTile(
+                        title: Align(
+                          alignment:
+                              Alignment.center, // Centramos el texto dentro del ListTile
+                          child: Text(vehicleBrand['name']),
+                        ),
+                        onTap: () {
+                          _showOptionsDialog(
+                              vehicleBrand['id'], vehicleBrand['name']);
+                        },
+                      ),
+                    );
+                  },
+                ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          _showAddDialog(); // Llamamos a _showAddDialog cuando se presiona el botón
+        },
+        tooltip: 'Añadir nueva marca de vehículo',
+        backgroundColor: Colors.blue, // Cambiar color de fondo a azul
+        child: Icon(Icons.add, color: Colors.white), // Ícono blanco
+      ),
     );
   }
 }

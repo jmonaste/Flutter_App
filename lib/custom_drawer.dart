@@ -1,51 +1,53 @@
+// lib/custom_drawer.dart
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Importa SharedPreferences
-import 'package:http/http.dart' as http; // Para realizar la llamada de logout
+import 'package:provider/provider.dart';
+import 'api_service.dart';
+import 'login_screen.dart';
+import 'home_page.dart';
 import 'vehicle_type_list.dart';
 import 'manage_vehicle_models.dart';
 import 'manage_vehicle_brand.dart';
 import 'camera_page.dart';
-import 'home_page.dart';
-import 'main.dart'; // Importa para redirigir al LoginScreen
-import 'constants.dart';
 
 class CustomDrawer extends StatelessWidget {
   final String userName;
   final VoidCallback onProfileTap;
-  final String token;  // Añadido para pasar el token
 
   const CustomDrawer({
     Key? key,
     required this.userName,
     required this.onProfileTap,
-    required this.token,  // Añadido para usar el token en la navegación
   }) : super(key: key);
 
   Future<void> _logout(BuildContext context) async {
+    final apiService = Provider.of<ApiService>(context, listen: false);
+
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/logout'),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+      await apiService.logout(); // Utiliza el método de logout de ApiService
+
+      // Navegar de vuelta al LoginScreen y limpiar el stack de navegación
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()), // Redirige a la página de login
+        (Route<dynamic> route) => false, // Elimina todas las rutas anteriores
       );
-
-      if (response.statusCode == 200) {
-        // Eliminar el token de SharedPreferences
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.clear();  // Elimina el token guardado
-
-        // Navegar de vuelta al LoginScreen y limpiar el stack de navegación
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => LoginScreen()), // Redirige a la página de login
-          (Route<dynamic> route) => false, // Elimina todas las rutas anteriores
-        );
-      } else {
-        print('Error al cerrar sesión en el servidor: ${response.statusCode}');
-      }
     } catch (e) {
-      print('Error en la solicitud de cierre de sesión: $e');
+      print('Error al cerrar sesión: $e');
+      // Mostrar un diálogo de error al usuario
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: Colors.grey[800],
+          title: Text('Error', style: TextStyle(color: Colors.white)),
+          content: Text('No se pudo cerrar sesión. Por favor, intenta nuevamente.', style: TextStyle(color: Colors.white70)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Aceptar', style: TextStyle(color: Colors.blueAccent)),
+            ),
+          ],
+        ),
+      );
     }
   }
 
@@ -55,11 +57,12 @@ class CustomDrawer extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Confirmar cierre de sesión'),
-          content: Text('¿Seguro que quieres cerrar sesión?'),
+          backgroundColor: Colors.grey[800],
+          title: Text('Confirmar cierre de sesión', style: TextStyle(color: Colors.white)),
+          content: Text('¿Seguro que quieres cerrar sesión?', style: TextStyle(color: Colors.white70)),
           actions: [
             TextButton(
-              child: Text('Cancelar'),
+              child: Text('Cancelar', style: TextStyle(color: Colors.blueAccent)),
               onPressed: () {
                 Navigator.of(context).pop();  // Cerrar el diálogo
               },
@@ -100,12 +103,16 @@ class CustomDrawer extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(userName,
-                        style: TextStyle(color: Colors.white, fontSize: 18)),
+                    Text(
+                      userName,
+                      style: TextStyle(color: Colors.white, fontSize: 18),
+                    ),
                     GestureDetector(
                       onTap: onProfileTap,
-                      child: Text('Ver perfil',
-                          style: TextStyle(color: Colors.blueAccent, fontSize: 14)),
+                      child: Text(
+                        'Ver perfil',
+                        style: TextStyle(color: Colors.blueAccent, fontSize: 14),
+                      ),
                     ),
                   ],
                 ),
@@ -119,9 +126,7 @@ class CustomDrawer extends StatelessWidget {
             onTap: () {
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => HomePage(token: token), // Navegar a HomePage
-                ),
+                MaterialPageRoute(builder: (context) => HomePage()), // Navegar a HomePage sin pasar el token
                 (route) => false, // Remueve todas las páginas anteriores
               );
             },
@@ -132,9 +137,7 @@ class CustomDrawer extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => VehicleTypeListPage(token: token),
-                ),
+                MaterialPageRoute(builder: (context) => VehicleTypeListPage()),
               );
             },
           ),
@@ -145,9 +148,7 @@ class CustomDrawer extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => VehicleBrandManagePage(token: token),
-                ),
+                MaterialPageRoute(builder: (context) => VehicleBrandManagePage()),
               );
             },
           ),
@@ -158,9 +159,7 @@ class CustomDrawer extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => VehicleModelManagePage(token: token),
-                ),
+                MaterialPageRoute(builder: (context) => VehicleModelManagePage()),
               );
             },
           ),
@@ -170,9 +169,7 @@ class CustomDrawer extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => CameraPage(token: token),
-                ),
+                MaterialPageRoute(builder: (context) => CameraPage()),
               );
             },
           ),
@@ -182,6 +179,7 @@ class CustomDrawer extends StatelessWidget {
             title: Text('Configuraciones', style: TextStyle(color: Colors.white)),
             onTap: () {
               // Acción de configuración
+              // Puedes implementar la navegación a una página de configuraciones si lo deseas
             },
           ),
           ListTile(

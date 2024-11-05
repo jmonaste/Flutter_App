@@ -1,10 +1,12 @@
+// lib/vehicle_detail_page.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'custom_drawer.dart';
-import 'custom_footer.dart';
-import 'constants.dart';
-import 'home_page.dart';
+import 'package:provider/provider.dart'; // Importa Provider
+import 'package:dio/dio.dart'; // Importa Dio
+import 'api_service.dart'; // Importa ApiService
+import 'custom_drawer.dart'; // Importa CustomDrawer si lo usas
+import 'custom_footer.dart'; // Importa CustomFooter si lo usas
+import 'home_page.dart'; // Importa HomePage si lo necesitas
 
 // Modelo para representar un comentario predefinido
 class StateComment {
@@ -59,12 +61,10 @@ class Transition {
 
 class VehicleDetailPage extends StatefulWidget {
   final int vehicleId;
-  final String token;
 
   const VehicleDetailPage({
     Key? key,
     required this.vehicleId,
-    required this.token,
   }) : super(key: key);
 
   @override
@@ -90,23 +90,25 @@ class VehicleDetailPageState extends State<VehicleDetailPage> {
     _fetchInitialData();
   }
 
-  /// Obtiene datos del vehículo, detalles de estados y transiciones permitidas
+  /// Obtiene datos del vehículo, detalles de estados y estado actual
   Future<void> _fetchInitialData() async {
     setState(() {
       _isLoading = true;
       _errorMessage = '';
     });
 
+    final apiService = Provider.of<ApiService>(context, listen: false);
+
     try {
       // Realizar las llamadas a la API en paralelo
       await Future.wait([
-        _fetchVehicleData(),
-        _fetchStatesDetails(),
-        _fetchCurrentState(),
+        _fetchVehicleData(apiService),
+        _fetchStatesDetails(apiService),
+        _fetchCurrentState(apiService),
       ]);
 
       // Una vez obtenidos los nombres de los estados, obtener las transiciones permitidas
-      await _fetchAllowedTransitions();
+      await _fetchAllowedTransitions(apiService);
     } catch (e) {
       print('Error al obtener los datos iniciales: $e');
       _showErrorDialog('Error al cargar los datos. Por favor, inténtelo más tarde.');
@@ -118,83 +120,88 @@ class VehicleDetailPageState extends State<VehicleDetailPage> {
   }
 
   /// Obtiene los datos del vehículo desde la API
-  Future<void> _fetchVehicleData() async {
-    final url = Uri.parse('$baseUrl/api/vehicles/${widget.vehicleId}');
-    final response = await http.get(url, headers: {
-      'Authorization': 'Bearer ${widget.token}',
-    });
+  Future<void> _fetchVehicleData(ApiService apiService) async {
+    try {
+      final response = await apiService.dio.get('/api/vehicles/${widget.vehicleId}/');
 
-    if (response.statusCode == 200) {
-      final vehicleJson = jsonDecode(utf8.decode(response.bodyBytes));
-      setState(() {
-        _vehicleData = vehicleJson;
-      });
-    } else {
-      throw Exception('Error al obtener los datos del vehículo. Estado: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        final vehicleJson = response.data;
+        setState(() {
+          _vehicleData = vehicleJson;
+        });
+      } else {
+        throw Exception('Error al obtener los datos del vehículo. Estado: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error al obtener los datos del vehículo: $e');
     }
   }
 
   /// Obtiene los detalles de los estados desde la API
-  Future<void> _fetchStatesDetails() async {
-    final url = Uri.parse('$baseUrl/api/states/');
-    final response = await http.get(url, headers: {
-      'Authorization': 'Bearer ${widget.token}',
-    });
+  Future<void> _fetchStatesDetails(ApiService apiService) async {
+    try {
+      final response = await apiService.dio.get('/api/states/');
 
-    if (response.statusCode == 200) {
-      final List<dynamic> statesJson = jsonDecode(utf8.decode(response.bodyBytes));
-      final Map<int, String> statesMap = {
-        for (var state in statesJson)
-          if (state['id'] != null && state['name'] != null) state['id']: state['name'],
-      };
-      setState(() {
-        _stateNames = statesMap;
-      });
-    } else {
-      throw Exception('Error al obtener los detalles de los estados. Estado: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        final List<dynamic> statesJson = response.data;
+        final Map<int, String> statesMap = {
+          for (var state in statesJson)
+            if (state['id'] != null && state['name'] != null) state['id']: state['name'],
+        };
+        setState(() {
+          _stateNames = statesMap;
+        });
+      } else {
+        throw Exception('Error al obtener los detalles de los estados. Estado: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error al obtener los detalles de los estados: $e');
     }
   }
 
   /// Obtiene el estado actual del vehículo desde la API
-  Future<void> _fetchCurrentState() async {
-    final url = Uri.parse('$baseUrl/api/vehicles/${widget.vehicleId}/current_state');
-    final response = await http.get(url, headers: {
-      'Authorization': 'Bearer ${widget.token}',
-    });
+  Future<void> _fetchCurrentState(ApiService apiService) async {
+    try {
+      final response = await apiService.dio.get('/api/vehicles/${widget.vehicleId}/current_state/');
 
-    if (response.statusCode == 200) {
-      final currentStateJson = jsonDecode(utf8.decode(response.bodyBytes));
-      setState(() {
-        _currentState = currentStateJson;
-      });
-    } else {
-      throw Exception('Error al obtener el estado actual del vehículo. Estado: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        final currentStateJson = response.data;
+        setState(() {
+          _currentState = currentStateJson;
+        });
+      } else {
+        throw Exception('Error al obtener el estado actual del vehículo. Estado: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error al obtener el estado actual del vehículo: $e');
     }
   }
 
   /// Obtiene las transiciones permitidas desde la API
-  Future<void> _fetchAllowedTransitions() async {
-    final url = Uri.parse('$baseUrl/api/vehicles/${widget.vehicleId}/allowed_transitions');
-    final response = await http.get(url, headers: {
-      'Authorization': 'Bearer ${widget.token}',
-    });
+  Future<void> _fetchAllowedTransitions(ApiService apiService) async {
+    try {
+      final response = await apiService.dio.get('/api/vehicles/${widget.vehicleId}/allowed_transitions/');
 
-    if (response.statusCode == 200) {
-      final List<dynamic> transitionsJson = jsonDecode(utf8.decode(response.bodyBytes));
-      final List<Transition> transitions = transitionsJson.map((transition) {
-        return Transition.fromJson({
-          'id': transition['id'],
-          'from_state_id': transition['from_state_id'],
-          'to_state_id': transition['to_state_id'],
-          'name': _stateNames[transition['to_state_id']] ?? 'Estado Desconocido',
+      if (response.statusCode == 200) {
+        final List<dynamic> transitionsJson = response.data;
+        final List<Transition> transitions = transitionsJson.map((transition) {
+          return Transition.fromJson({
+            'id': transition['id'],
+            'from_state_id': transition['from_state_id'],
+            'to_state_id': transition['to_state_id'],
+            'name': _stateNames[transition['to_state_id']] ?? 'Estado Desconocido',
+          });
+        }).toList();
+
+        setState(() {
+          _allowedTransitions = transitions;
         });
-      }).toList();
-
-      setState(() {
-        _allowedTransitions = transitions;
-      });
-    } else {
-      print('Error al obtener las transiciones permitidas. Estado: ${response.statusCode}');
+      } else {
+        print('Error al obtener las transiciones permitidas. Estado: ${response.statusCode}');
+        // No lanzamos una excepción aquí para permitir que la página se cargue incluso si las transiciones fallan
+      }
+    } catch (e) {
+      print('Error al obtener las transiciones permitidas: $e');
       // No lanzamos una excepción aquí para permitir que la página se cargue incluso si las transiciones fallan
     }
   }
@@ -205,7 +212,7 @@ class VehicleDetailPageState extends State<VehicleDetailPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => HomePage(token: widget.token),
+          builder: (context) => HomePage(),
         ),
       );
     } else if (index == 2) {
@@ -331,25 +338,30 @@ class VehicleDetailPageState extends State<VehicleDetailPage> {
       _stateComments = [];
     });
 
-    final url = Uri.parse('$baseUrl/api/states/$stateId/comments');
-    final response = await http.get(url, headers: {
-      'Authorization': 'Bearer ${widget.token}',
-    });
+    final apiService = Provider.of<ApiService>(context, listen: false);
 
-    if (response.statusCode == 200) {
-      final List<dynamic> commentsJson = jsonDecode(utf8.decode(response.bodyBytes));
-      final List<StateComment> comments = commentsJson.map((comment) {
-        return StateComment.fromJson(comment);
-      }).toList();
+    try {
+      final response = await apiService.dio.get('/api/states/$stateId/comments/');
 
-      setState(() {
-        _stateComments = comments;
-      });
-    } else if (response.statusCode == 404) {
-      setState(() {
-        _commentsErrorMessage = 'Estado no encontrado.';
-      });
-    } else {
+      if (response.statusCode == 200) {
+        final List<dynamic> commentsJson = response.data;
+        final List<StateComment> comments = commentsJson.map((comment) {
+          return StateComment.fromJson(comment);
+        }).toList();
+
+        setState(() {
+          _stateComments = comments;
+        });
+      } else if (response.statusCode == 404) {
+        setState(() {
+          _commentsErrorMessage = 'Estado no encontrado.';
+        });
+      } else {
+        setState(() {
+          _commentsErrorMessage = 'Error al obtener los comentarios del estado.';
+        });
+      }
+    } catch (e) {
       setState(() {
         _commentsErrorMessage = 'Error al obtener los comentarios del estado.';
       });
@@ -371,23 +383,17 @@ class VehicleDetailPageState extends State<VehicleDetailPage> {
     print('New State ID: $toStateId');
     print('Comment Text: $commentText');
 
-    // Construir la URL con los query parameters
-    final Uri url = Uri.parse('$baseUrl/api/vehicles/${widget.vehicleId}/change_state').replace(
-      queryParameters: {
-        'vehicle_id': widget.vehicleId.toString(),
-        'new_state_id': toStateId.toString(),
-        'comments': commentText,
-      },
-    );
+    final apiService = Provider.of<ApiService>(context, listen: false);
 
     try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Authorization': 'Bearer ${widget.token}',
-          'Content-Type': 'application/json',
+      // Construir la URL con los query parameters
+      final response = await apiService.dio.post(
+        '/api/vehicles/${widget.vehicleId}/change_state/',
+        queryParameters: {
+          'vehicle_id': widget.vehicleId.toString(),
+          'new_state_id': toStateId.toString(),
+          'comments': commentText,
         },
-        // No enviar cuerpo, ya que los parámetros están en la URL
       );
 
       if (response.statusCode == 200) {
@@ -395,14 +401,14 @@ class VehicleDetailPageState extends State<VehicleDetailPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Estado del vehículo actualizado exitosamente')),
         );
-        await _fetchVehicleData(); // Actualiza los datos del vehículo
-        await _fetchAllowedTransitions(); // Actualiza las transiciones permitidas
-        await _fetchCurrentState(); // Actualiza el estado actual
+        await _fetchVehicleData(apiService); // Actualiza los datos del vehículo
+        await _fetchAllowedTransitions(apiService); // Actualiza las transiciones permitidas
+        await _fetchCurrentState(apiService); // Actualiza el estado actual
       } else if (response.statusCode == 400) {
-        final errorJson = jsonDecode(utf8.decode(response.bodyBytes));
+        final errorJson = response.data;
         _showErrorDialog(errorJson['detail'] ?? 'Error al cambiar el estado del vehículo.');
       } else if (response.statusCode == 404) {
-        final errorJson = jsonDecode(utf8.decode(response.bodyBytes));
+        final errorJson = response.data;
         _showErrorDialog(errorJson['detail'] ?? 'Estado o comentario no encontrado.');
       } else {
         print('Error al cambiar el estado del vehículo. Estado: ${response.statusCode}');
@@ -430,7 +436,6 @@ class VehicleDetailPageState extends State<VehicleDetailPage> {
       ),
       drawer: CustomDrawer(
         userName: 'Nombre del usuario', // Reemplaza con el nombre real del usuario
-        token: widget.token,
         onProfileTap: () {
           // Lógica para ver el perfil (puedes implementarla según tus necesidades)
           ScaffoldMessenger.of(context).showSnackBar(
