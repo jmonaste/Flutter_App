@@ -383,4 +383,62 @@ class ApiService {
 
 
 
+  // Método para obtener los modelos de vehículos
+  Future<List<Map<String, dynamic>>> getVehicleModels() async {
+    try {
+      final response = await dio.get('/api/models');
+      return List<Map<String, dynamic>>.from(response.data);
+    } catch (e) {
+      print('Error in getVehicleModels: $e');
+      rethrow;
+    }
+  }
+
+  // Método para actualizar un modelo de vehículo
+  Future<void> updateVehicleModel(int id, String name, int brandId, int typeId) async {
+    try {
+      await dio.put(
+        '/api/models/$id',
+        data: {
+          'name': name,
+          'brand_id': brandId,
+          'type_id': typeId,
+        },
+      );
+    } catch (e) {
+      print('Error in updateVehicleModel: $e');
+      rethrow;
+    }
+  }
+
+  // Método para eliminar un modelo de vehículo
+  Future<void> deleteVehicleModel(int id) async {
+    try {
+      await dio.delete('/api/models/$id');
+    } catch (e) {
+      print('Error in deleteVehicleModel: $e');
+      rethrow;
+    }
+  }
+
+  // Método para crear un nuevo modelo de vehículo
+  Future<void> createVehicleModel(String name, int brandId, int typeId) async {
+    try {
+      await dio.post(
+        '/api/models',
+        data: {
+          'name': name,
+          'brand_id': brandId,
+          'type_id': typeId,
+        },
+      );
+    } catch (e) {
+      print('Error in createVehicleModel: $e');
+      rethrow;
+    }
+  }
+
+
+
+
 }
