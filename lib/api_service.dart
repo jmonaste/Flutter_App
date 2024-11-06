@@ -177,7 +177,6 @@ class ApiService {
     }
   }
 
-
   // Método para obtener los comentarios permitidos para un estado específico
   Future<List<Map<String, dynamic>>> getCommentsForState(int stateId) async {
     try {
@@ -265,6 +264,8 @@ class ApiService {
     }
   }
 
+
+
   // Método para cerrar sesión
   Future<void> logout() async {
     try {
@@ -282,34 +283,55 @@ class ApiService {
     }
   }
 
-  // Otros métodos HTTP según tus necesidades
-  Future<dynamic> postData(String endpoint, Map<String, dynamic> data) async {
+  // Método para obtener los tipos de vehículos
+  Future<List<Map<String, dynamic>>> getVehicleTypes() async {
     try {
-      final response = await dio.post(endpoint, data: data);
-      return response.data;
+      final response = await dio.get('/api/vehicle/types', queryParameters: {'skip': 0, 'limit': 20});
+      return List<Map<String, dynamic>>.from(response.data);
     } catch (e) {
-      print('Error in postData: $e');
+      print('Error in getVehicleTypes: $e');
       rethrow;
     }
   }
 
-  Future<dynamic> putData(String endpoint, Map<String, dynamic> data) async {
+  // Método para actualizar un tipo de vehículo
+  Future<void> updateVehicleType(int id, String typeName) async {
     try {
-      final response = await dio.put(endpoint, data: data);
-      return response.data;
+      await dio.put(
+        '/api/vehicle/types/$id',
+        data: {'type_name': typeName},
+      );
     } catch (e) {
-      print('Error in putData: $e');
+      print('Error in updateVehicleType: $e');
       rethrow;
     }
   }
 
-  Future<dynamic> deleteData(String endpoint) async {
+  // Método para eliminar un tipo de vehículo
+  Future<void> deleteVehicleType(int id) async {
     try {
-      final response = await dio.delete(endpoint);
-      return response.data;
+      await dio.delete('/api/vehicle/types/$id');
     } catch (e) {
-      print('Error in deleteData: $e');
+      print('Error in deleteVehicleType: $e');
       rethrow;
     }
   }
+
+  // Método para crear un nuevo tipo de vehículo
+  Future<void> createVehicleType(String typeName) async {
+    try {
+      await dio.post(
+        '/api/vehicle/types',
+        data: {'type_name': typeName},
+      );
+    } catch (e) {
+      print('Error in createVehicleType: $e');
+      rethrow;
+    }
+  }
+
+
+
+
+
 }
