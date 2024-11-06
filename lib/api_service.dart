@@ -166,6 +166,50 @@ class ApiService {
     }
   }
 
+  // Método para obtener las transiciones permitidas de un vehículo específico
+  Future<List<Map<String, dynamic>>> getAllowedTransitions(int vehicleId) async {
+    try {
+      final response = await dio.get('/api/vehicles/$vehicleId/allowed_transitions');
+      return List<Map<String, dynamic>>.from(response.data);
+    } catch (e) {
+      print('Error in getAllowedTransitions: $e');
+      rethrow;
+    }
+  }
+
+
+  // Método para obtener los comentarios permitidos para un estado específico
+  Future<List<Map<String, dynamic>>> getCommentsForState(int stateId) async {
+    try {
+      final response = await dio.get('/api/states/$stateId/comments');
+      return List<Map<String, dynamic>>.from(response.data);
+    } catch (e) {
+      print('Error in getCommentsForState: $e');
+      rethrow;
+    }
+  }
+
+  // Método para cambiar el estado de un vehículo
+  Future<void> changeVehicleState(int vehicleId, int newStateId, int commentId) async {
+    try {
+      await dio.put(
+        '/api/vehicles/$vehicleId/state',
+        data: {
+          'new_state_id': newStateId,
+          'comment_id': commentId,
+        },
+      );
+    } catch (e) {
+      print('Error in changeVehicleState: $e');
+      rethrow;
+    }
+  }
+
+
+
+
+
+
   // Método para subir una imagen
   Future<Map<String, dynamic>> uploadImage(Uint8List? webImage, File? imageFile) async {
     try {

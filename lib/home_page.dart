@@ -57,12 +57,14 @@ class HomePageState extends State<HomePage> {
 
       for (var vehicle in vehiclesData) {
         vehiclesWithState.add({
+          'id': vehicle['id'], // Asegúrate de incluir el ID del vehículo
           'vin': vehicle['vin'],
           'brand': vehicle['model']['brand']['name'],
           'model': vehicle['model']['name'],
           'status': vehicle['status']['name'],
           'is_urgent': vehicle['is_urgent'],
           'color': vehicle['color']['name'],
+          'hex_code': vehicle['color']['hex_code'],
         });
       }
 
@@ -86,11 +88,17 @@ class HomePageState extends State<HomePage> {
           children: [
             Text('VIN: ${vehicle['vin']}'),
             Text('Estado: ${vehicle['status']}'),
-            Text('Color: ${vehicle['color']}'),
             if (vehicle['is_urgent']) Text('¡Urgente!', style: TextStyle(color: Colors.red)),
           ],
         ),
-        trailing: Icon(Icons.arrow_forward),
+        trailing: Container(
+          width: 20,
+          height: 20,
+          decoration: BoxDecoration(
+            color: Color(int.parse('0xff${vehicle['hex_code'].substring(1)}')),
+            shape: BoxShape.circle,
+          ),
+        ),
         onTap: () {
           Navigator.push(
             context,
@@ -129,7 +137,7 @@ class HomePageState extends State<HomePage> {
         userName: 'Nombre del usuario',
         onProfileTap: () {
           // Lógica para ver el perfil
-        },        
+        },
       ),
       body: _vehicles.isEmpty
           ? Center(child: CircularProgressIndicator())
