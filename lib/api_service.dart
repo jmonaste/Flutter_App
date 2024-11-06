@@ -333,5 +333,54 @@ class ApiService {
 
 
 
+  // Método para obtener las marcas de vehículos
+  Future<List<Map<String, dynamic>>> getVehicleBrands() async {
+    try {
+      final response = await dio.get('/api/brands', queryParameters: {'skip': 0, 'limit': 10});
+      return List<Map<String, dynamic>>.from(response.data);
+    } catch (e) {
+      print('Error in getVehicleBrands: $e');
+      rethrow;
+    }
+  }
+
+  // Método para actualizar una marca de vehículo
+  Future<void> updateVehicleBrand(int id, String name) async {
+    try {
+      await dio.put(
+        '/api/brands/$id',
+        data: {'name': name},
+      );
+    } catch (e) {
+      print('Error in updateVehicleBrand: $e');
+      rethrow;
+    }
+  }
+
+  // Método para eliminar una marca de vehículo
+  Future<void> deleteVehicleBrand(int id) async {
+    try {
+      await dio.delete('/api/brands/$id');
+    } catch (e) {
+      print('Error in deleteVehicleBrand: $e');
+      rethrow;
+    }
+  }
+
+  // Método para crear una nueva marca de vehículo
+  Future<void> createVehicleBrand(String name) async {
+    try {
+      await dio.post(
+        '/api/brands',
+        data: {'name': name},
+      );
+    } catch (e) {
+      print('Error in createVehicleBrand: $e');
+      rethrow;
+    }
+  }
+
+
+
 
 }
