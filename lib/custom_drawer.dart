@@ -1,4 +1,3 @@
-// lib/custom_drawer.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'api_service.dart';
@@ -8,7 +7,6 @@ import 'vehicle_type_list.dart';
 import 'manage_vehicle_models.dart';
 import 'manage_vehicle_brand.dart';
 import 'camera_page.dart';
-import 'api_service.dart';
 
 class CustomDrawer extends StatelessWidget {
   final String userName;
@@ -24,55 +22,54 @@ class CustomDrawer extends StatelessWidget {
     final apiService = Provider.of<ApiService>(context, listen: false);
 
     try {
-      await apiService.logout(); // Utiliza el método de logout de ApiService
-
-      // Navegar de vuelta al LoginScreen y limpiar el stack de navegación
+      await apiService.logout();
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => LoginScreen()), // Redirige a la página de login
-        (Route<dynamic> route) => false, // Elimina todas las rutas anteriores
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+        (Route<dynamic> route) => false,
       );
     } catch (e) {
-      print('Error al cerrar sesión: $e');
-      // Mostrar un diálogo de error al usuario
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: Colors.grey[800],
-          title: Text('Error', style: TextStyle(color: Colors.white)),
-          content: Text('No se pudo cerrar sesión. Por favor, intenta nuevamente.', style: TextStyle(color: Colors.white70)),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Aceptar', style: TextStyle(color: Colors.blueAccent)),
-            ),
-          ],
-        ),
-      );
+      _showErrorDialog(context, 'No se pudo cerrar sesión. Por favor, intenta nuevamente.');
     }
   }
 
-  // Ventana emergente para confirmar el cierre de sesión
+  void _showErrorDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Color(0xFF262626),
+        title: Text('Error', style: TextStyle(color: Color(0xFFF2CB05))),
+        content: Text(message, style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Aceptar', style: TextStyle(color: Color(0xFFA64F03))),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showLogoutConfirmation(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: Colors.grey[800],
-          title: Text('Confirmar cierre de sesión', style: TextStyle(color: Colors.white)),
+          backgroundColor: Color(0xFF262626),
+          title: Text('Confirmar cierre de sesión', style: TextStyle(color: Color(0xFFF2CB05))),
           content: Text('¿Seguro que quieres cerrar sesión?', style: TextStyle(color: Colors.white70)),
           actions: [
             TextButton(
-              child: Text('Cancelar', style: TextStyle(color: Colors.blueAccent)),
+              child: Text('Cancelar', style: TextStyle(color: Color(0xFFA64F03))),
               onPressed: () {
-                Navigator.of(context).pop();  // Cerrar el diálogo
+                Navigator.of(context).pop();
               },
             ),
             TextButton(
               child: Text('Cerrar sesión', style: TextStyle(color: Colors.red)),
               onPressed: () {
-                Navigator.of(context).pop();  // Cerrar el diálogo
-                _logout(context);  // Llamar a la función de logout
+                Navigator.of(context).pop();
+                _logout(context);
               },
             ),
           ],
@@ -83,23 +80,21 @@ class CustomDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final apiService = Provider.of<ApiService>(context, listen: false);
-    
     return Drawer(
-      backgroundColor: Colors.grey[850],
+      backgroundColor: Color(0xFFF2F2F2),
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
             decoration: BoxDecoration(
-              color: Colors.grey[800],
+              color: Color(0xFFA64F03),
             ),
             child: Row(
               children: [
                 CircleAvatar(
                   radius: 30,
-                  backgroundColor: Colors.grey[700],
-                  child: Icon(Icons.person, color: Colors.white, size: 30),
+                  backgroundColor: Color(0xFFF2CB05),
+                  child: Icon(Icons.person, color: Color(0xFF262626), size: 30),
                 ),
                 SizedBox(width: 10),
                 Column(
@@ -114,7 +109,7 @@ class CustomDrawer extends StatelessWidget {
                       onTap: onProfileTap,
                       child: Text(
                         'Ver perfil',
-                        style: TextStyle(color: Colors.blueAccent, fontSize: 14),
+                        style: TextStyle(color: Color(0xFFF2CB05), fontSize: 14),
                       ),
                     ),
                   ],
@@ -122,82 +117,70 @@ class CustomDrawer extends StatelessWidget {
               ],
             ),
           ),
-          Divider(color: Colors.grey[600], thickness: 1),
-          ListTile(
-            leading: Icon(Icons.home, color: Colors.white),
-            title: Text('Inicio', style: TextStyle(color: Colors.white)),
-            onTap: () {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => HomePage()), // Navegar a HomePage sin pasar el token
-                (route) => false, // Remueve todas las páginas anteriores
-              );
-            },
+          Divider(color: Color(0xFFA64F03), thickness: 1),
+          _buildDrawerItem(
+            icon: Icons.home,
+            text: 'Inicio',
+            onTap: () => Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => HomePage()),
+              (route) => false,
+            ),
           ),
-          ListTile(
-            leading: Icon(Icons.directions_car, color: Colors.white),
-            title: Text('Tipos de vehículos', style: TextStyle(color: Colors.white)),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => VehicleTypeListPage()),
-              );
-            },
+          _buildDrawerItem(
+            icon: Icons.directions_car,
+            text: 'Tipos de vehículos',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => VehicleTypeListPage()),
+            ),
           ),
-          // Nueva opción "Marcas"
-          ListTile(
-            leading: Icon(Icons.business, color: Colors.white),
-            title: Text('Marcas', style: TextStyle(color: Colors.white)),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ManageVehicleBrandPage()),
-              );
-            },
+          _buildDrawerItem(
+            icon: Icons.business,
+            text: 'Marcas',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ManageVehicleBrandPage()),
+            ),
           ),
-          // Nueva opción "Modelos"
-          ListTile(
-            leading: Icon(Icons.category, color: Colors.white),
-            title: Text('Modelos', style: TextStyle(color: Colors.white)),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ManageVehicleModelsPage()),
-              );
-            },
+          _buildDrawerItem(
+            icon: Icons.category,
+            text: 'Modelos',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ManageVehicleModelsPage()),
+            ),
           ),
-          ListTile(
-            leading: Icon(Icons.add, color: Colors.white),
-            title: Text('Nuevo vehículo', style: TextStyle(color: Colors.white)),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => CameraPage()),
-              );
-            },
+          _buildDrawerItem(
+            icon: Icons.add,
+            text: 'Nuevo vehículo',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => CameraPage()),
+            ),
           ),
-          Divider(color: Colors.grey[600], thickness: 1),
-          ListTile(
-            leading: Icon(Icons.settings, color: Colors.white),
-            title: Text('Configuraciones', style: TextStyle(color: Colors.white)),
-            onTap: () {
-              // Acción de configuración
-              // Puedes implementar la navegación a una página de configuraciones si lo deseas
-            },
-          ),
-          ListTile(
-            leading: Icon(Icons.logout),
-            title: Text('Cerrar sesión'),
-            onTap: () async {
-              await apiService.logout();
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => LoginScreen()),
-              );
-            },
+          Divider(color: Color(0xFFA64F03), thickness: 1),
+          _buildDrawerItem(
+            icon: Icons.logout,
+            text: 'Cerrar sesión',
+            color: Colors.red,
+            onTap: () => _showLogoutConfirmation(context),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDrawerItem({
+    required IconData icon,
+    required String text,
+    required VoidCallback onTap,
+    Color color = Colors.white,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: Color(0xFFA64F03)),
+      title: Text(text, style: TextStyle(color: Color(0xFFA64F03))),
+      onTap: onTap,
     );
   }
 }

@@ -31,12 +31,12 @@ class MyApp extends StatelessWidget {
       navigatorKey: navigatorKey, // Asignar el navigatorKey
       theme: ThemeData.dark().copyWith(
         colorScheme: ColorScheme.dark().copyWith(
-          primary: Colors.blueAccent,
+          primary: Color(0xFFF2CB05),
         ),
-        scaffoldBackgroundColor: Colors.black87,
+        scaffoldBackgroundColor: Color(0xFFF2F2F2),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blueAccent,
+            backgroundColor: Color(0xFFA64F03),
           ),
         ),
       ),

@@ -60,50 +60,67 @@ class _LoginScreenState extends State<LoginScreen> {
     double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
+      backgroundColor: Color(0xFFF2F2F2),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: ListView(
           children: [
             SizedBox(height: screenHeight * .12),
             const Text(
-              'Welcome,',
+              'Bienvenido,',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
+                color: Color(0xFF262626),
               ),
             ),
             SizedBox(height: screenHeight * .01),
             Text(
-              'Sign in to continue!',
+              'Inicia sesión para continuar',
               style: TextStyle(
                 fontSize: 18,
-                color: Colors.black.withOpacity(.6),
+                color: Color(0xFF262626).withOpacity(.6),
               ),
             ),
             SizedBox(height: screenHeight * .12),
-            InputField(
+            TextField(
               controller: _usernameController,
-              labelText: 'Username',
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-              autoFocus: true,
+              style: TextStyle(color: Color(0xFFA64F03)), // Color del texto introducido
+              decoration: InputDecoration(
+                labelText: 'Nombre de usuario',
+                labelStyle: TextStyle(color: Color(0xFFA64F03)),
+                border: OutlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFFA64F03)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFFA64F03)),
+                ),
+              ),
             ),
             SizedBox(height: screenHeight * .025),
-            InputField(
+            TextField(
               controller: _passwordController,
-              labelText: 'Password',
               obscureText: true,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (val) => _login(),
+              style: TextStyle(color: Color(0xFFA64F03)), // Color del texto introducido
+              decoration: InputDecoration(
+                labelText: 'Contraseña',
+                labelStyle: TextStyle(color: Color(0xFFA64F03)),
+                border: OutlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFFA64F03)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFFA64F03)),
+                ),
+              ),
             ),
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () {},
                 child: const Text(
-                  'Forgot Password?',
+                  '¿Olvidaste tu contraseña?',
                   style: TextStyle(
-                    color: Colors.black,
+                    color: Color(0xFF262626),
                   ),
                 ),
               ),
@@ -111,9 +128,22 @@ class _LoginScreenState extends State<LoginScreen> {
             SizedBox(
               height: screenHeight * .075,
             ),
-            FormButton(
-              text: 'Log In',
+            ElevatedButton(
               onPressed: _login,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFFF2CB05),
+                padding: EdgeInsets.symmetric(vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Iniciar sesión',
+                style: TextStyle(
+                  color: Color(0xFF262626),
+                  fontSize: 16,
+                ),
+              ),
             ),
             SizedBox(
               height: screenHeight * .15,
@@ -122,86 +152,21 @@ class _LoginScreenState extends State<LoginScreen> {
               onPressed: () {},
               child: RichText(
                 text: const TextSpan(
-                  text: "I'm a new user, ",
-                  style: TextStyle(color: Colors.black),
+                  text: 'Soy un nuevo usuario, ',
+                  style: TextStyle(color: Color(0xFF262626)),
                   children: [
                     TextSpan(
-                      text: 'Sign Up',
+                      text: 'Regístrate',
                       style: TextStyle(
-                        color: Colors.blue,
+                        color: Color(0xFFA64F03),
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
               ),
-            )
+            ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class FormButton extends StatelessWidget {
-  final String text;
-  final Function? onPressed;
-  const FormButton({this.text = '', this.onPressed, Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    double screenHeight = MediaQuery.of(context).size.height;
-
-    return ElevatedButton(
-      onPressed: onPressed as void Function()?,
-      style: ElevatedButton.styleFrom(
-        padding: EdgeInsets.symmetric(vertical: screenHeight * .02),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 16),
-      ),
-    );
-  }
-}
-
-class InputField extends StatelessWidget {
-  final TextEditingController controller;
-  final String? labelText;
-  final TextInputType? keyboardType;
-  final TextInputAction? textInputAction;
-  final bool autoFocus;
-  final bool obscureText;
-  final Function(String)? onSubmitted;
-
-  const InputField({
-    required this.controller,
-    this.labelText,
-    this.keyboardType,
-    this.textInputAction,
-    this.autoFocus = false,
-    this.obscureText = false,
-    this.onSubmitted,
-    Key? key,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      autofocus: autoFocus,
-      keyboardType: keyboardType,
-      textInputAction: textInputAction,
-      obscureText: obscureText,
-      onSubmitted: onSubmitted,
-      decoration: InputDecoration(
-        labelText: labelText,
-        floatingLabelBehavior: FloatingLabelBehavior.always,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
         ),
       ),
     );

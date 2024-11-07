@@ -28,9 +28,9 @@ class CustomFooter extends StatelessWidget {
         ),
       ],
       currentIndex: selectedIndex,
-      selectedItemColor: Colors.blueAccent,
-      unselectedItemColor: Colors.white70,
-      backgroundColor: Colors.black87,
+      selectedItemColor: Color(0xFFA64F03),
+      unselectedItemColor: Colors.grey,
+      backgroundColor: Color(0xFFF2F2F2),
       onTap: onTap,
     );
   }
