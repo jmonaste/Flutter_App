@@ -19,12 +19,12 @@ class CustomFooter extends StatelessWidget {
           label: 'Inicio',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.settings),
-          label: 'Administrar',
+          icon: Icon(Icons.car_crash),
+          label: 'Nuevo Vehiculo',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.account_circle),
-          label: 'Cuenta',
+          icon: Icon(Icons.search),
+          label: 'Buscar',
         ),
       ],
       currentIndex: selectedIndex,

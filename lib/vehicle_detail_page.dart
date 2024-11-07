@@ -3,6 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'api_service.dart';
 
+// Definición de la paleta de colores
+const Color primaryColor = Color(0xFFF2F2F2); // #A64F03
+const Color secondaryColor1 = Color(0xFFF2CB05); // #F2CB05
+const Color secondaryColor2 = Color(0xFFF2B33D); // #F2B33D
+const Color backgroundColor = Color(0xFFF2F2F2); // #F2F2F2
+const Color textColor = Color(0xFF262626); // #262626
+const Color optionsColor = Colors.grey;
+
+//const Color primaryColor = Color(0xFFA64F03); // #A64F03
+
+
 class VehicleDetailPage extends StatefulWidget {
   final int vehicleId;
 
@@ -51,6 +62,7 @@ class VehicleDetailPageState extends State<VehicleDetailPage> {
     }
   }
 
+
   /// Muestra un modal para seleccionar un comentario y cambiar el estado del vehículo
   Future<void> _showCommentSelectionModal(int newStateId) async {
     final apiService = Provider.of<ApiService>(context, listen: false);
@@ -76,14 +88,30 @@ class VehicleDetailPageState extends State<VehicleDetailPage> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: Text('Seleccionar Comentario'),
+              backgroundColor: backgroundColor, // Fondo del diálogo
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              title: Text(
+                'Seleccionar Comentario',
+                style: TextStyle(
+                  color: textColor,
+                  fontWeight: FontWeight.bold
+                ),
+              ),
               content: SingleChildScrollView(
                 child: Column(
                   children: comments.map((comment) {
                     return RadioListTile<int>(
-                      title: Text(comment['comment']),
+                      title: Text(
+                        comment['comment'],
+                        style: TextStyle(
+                          color: optionsColor
+                          ),
+                      ),
                       value: comment['id'],
                       groupValue: selectedCommentId,
+                      activeColor: secondaryColor2,
                       onChanged: (int? value) {
                         setState(() {
                           selectedCommentId = value;
@@ -96,16 +124,25 @@ class VehicleDetailPageState extends State<VehicleDetailPage> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: Text('Cancelar'),
+                  child: Text(
+                    'Cancelar',
+                    style: TextStyle(color: textColor),
+                  ),
                 ),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: secondaryColor2, // Color de fondo del botón
+                  ),
                   onPressed: selectedCommentId == null
                       ? null
                       : () {
                           Navigator.of(context).pop();
                           _changeVehicleState(newStateId, selectedCommentId!);
                         },
-                  child: Text('Aceptar'),
+                  child: Text(
+                    'Aceptar',
+                    style: TextStyle(color: textColor),
+                  ),
                 ),
               ],
             );
@@ -133,12 +170,12 @@ class VehicleDetailPageState extends State<VehicleDetailPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Error'),
-          content: Text(message),
+          title: Text('Error', style: TextStyle(color: primaryColor)),
+          content: Text(message, style: TextStyle(color: textColor)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('OK'),
+              child: Text('OK', style: TextStyle(color: primaryColor)),
             ),
           ],
         );
@@ -149,13 +186,16 @@ class VehicleDetailPageState extends State<VehicleDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: backgroundColor, // Fondo general
       appBar: AppBar(
-        title: Text('Detalles del Vehículo'),
+        title: Text('Detalles del Vehículo', style: TextStyle(color: textColor)),
+        backgroundColor: primaryColor,
+        iconTheme: IconThemeData(color: textColor),
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator(color: primaryColor))
           : _errorMessage.isNotEmpty
-              ? Center(child: Text(_errorMessage))
+              ? Center(child: Text(_errorMessage, style: TextStyle(color: textColor, fontSize: 16)))
               : _vehicleData != null
                   ? SingleChildScrollView(
                       padding: const EdgeInsets.all(16.0),
@@ -163,6 +203,7 @@ class VehicleDetailPageState extends State<VehicleDetailPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Card(
+                            color: primaryColor, // Color de fondo del card
                             elevation: 4,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
@@ -174,13 +215,21 @@ class VehicleDetailPageState extends State<VehicleDetailPage> {
                                 children: [
                                   Text(
                                     '${_vehicleData!['model']['brand']['name']} ${_vehicleData!['model']['name']}',
-                                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: textColor,
+                                    ),
                                   ),
                                   SizedBox(height: 10),
-                                  Text('VIN: ${_vehicleData!['vin']}', style: TextStyle(fontSize: 18)),
-                                  Text('Estado: ${_vehicleData!['status']['name']}', style: TextStyle(fontSize: 18)),
-                                  Text('Color: ${_vehicleData!['color']['name']}', style: TextStyle(fontSize: 18)),
-                                  if (_vehicleData!['is_urgent']) Text('¡Urgente!', style: TextStyle(fontSize: 18, color: Colors.red)),
+                                  Text('VIN: ${_vehicleData!['vin']}', style: TextStyle(fontSize: 18, color: Color(0xFFA64F03))),
+                                  Text('Estado: ${_vehicleData!['status']['name']}', style: TextStyle(fontSize: 18, color: textColor)),
+                                  Text('Color: ${_vehicleData!['color']['name']}', style: TextStyle(fontSize: 18, color: textColor)),
+                                  if (_vehicleData!['is_urgent'])
+                                    Text(
+                                      '¡Urgente!',
+                                      style: TextStyle(fontSize: 18, color: Colors.red, fontWeight: FontWeight.bold),
+                                    ),
                                   SizedBox(height: 20),
                                   Container(
                                     width: double.infinity,
@@ -195,16 +244,39 @@ class VehicleDetailPageState extends State<VehicleDetailPage> {
                             ),
                           ),
                           SizedBox(height: 20),
-                          Text('Transiciones Permitidas:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          Text(
+                            'Cambiar de estado',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
+                          ),
+                          SizedBox(height: 10),
                           ..._allowedTransitions.map((transition) {
                             return Card(
+                              color: secondaryColor2, // Color de fondo del card
                               elevation: 2,
                               margin: const EdgeInsets.symmetric(vertical: 8),
-                              child: ListTile(
-                                title: Text('${transition['to_state']['name']}', style: TextStyle(fontSize: 16)),
-                                trailing: ElevatedButton(
-                                  onPressed: () => _showCommentSelectionModal(transition['to_state_id']),
-                                  child: Text('Cambiar Estado'),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(8),
+                                onTap: () => _showCommentSelectionModal(transition['to_state_id']),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          '${transition['to_state']['name']}',
+                                          style: TextStyle(color: backgroundColor, fontSize: 16),
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.arrow_forward_ios,
+                                        color: backgroundColor,
+                                        size: 16,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             );
@@ -212,7 +284,7 @@ class VehicleDetailPageState extends State<VehicleDetailPage> {
                         ],
                       ),
                     )
-                  : Center(child: Text('No se encontraron datos del vehículo.')),
+                  : Center(child: Text('No se encontraron datos del vehículo.', style: TextStyle(color: textColor, fontSize: 16))),
     );
   }
 }
