@@ -8,6 +8,7 @@ import 'vehicle_type_list.dart';
 import 'manage_vehicle_models.dart';
 import 'manage_vehicle_brand.dart';
 import 'camera_page.dart';
+import 'api_service.dart';
 
 class CustomDrawer extends StatelessWidget {
   final String userName;
@@ -82,6 +83,8 @@ class CustomDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final apiService = Provider.of<ApiService>(context, listen: false);
+    
     return Drawer(
       backgroundColor: Colors.grey[850],
       child: ListView(
@@ -183,10 +186,14 @@ class CustomDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: Icon(Icons.logout, color: Colors.white),
-            title: Text('Cerrar sesión', style: TextStyle(color: Colors.white)),
-            onTap: () {
-              _showLogoutConfirmation(context);  // Mostrar la ventana de confirmación
+            leading: Icon(Icons.logout),
+            title: Text('Cerrar sesión'),
+            onTap: () async {
+              await apiService.logout();
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => LoginScreen()),
+              );
             },
           ),
         ],

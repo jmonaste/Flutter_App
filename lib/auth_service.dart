@@ -50,6 +50,10 @@ class AuthService {
     return await _storage.read(key: 'accessToken');
   }
 
+  Future<String?> getRefreshToken() async {
+    return await _storage.read(key: 'refreshToken');
+  }
+
   Future<bool> refreshAccessToken() async {
     final refreshToken = await _storage.read(key: 'refreshToken');
     if (refreshToken == null) {

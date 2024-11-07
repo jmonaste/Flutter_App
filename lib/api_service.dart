@@ -269,7 +269,12 @@ class ApiService {
   // Método para cerrar sesión
   Future<void> logout() async {
     try {
-      final response = await dio.post('/logout'); // Asegúrate de que este endpoint exista en tu API
+      final refreshToken = await _authService.getRefreshToken(); // Obtener el refresh token almacenado
+
+      final response = await dio.post(
+        '/logout',
+        data: {'refresh_token': refreshToken}
+        ); // Asegúrate de que este endpoint exista en tu API
 
       if (response.statusCode == 200) {
         // Eliminar tokens almacenados
@@ -439,6 +444,65 @@ class ApiService {
   }
 
 
+
+
+  // Método para obtener los colores de vehículos
+  Future<List<Map<String, dynamic>>> getVehicleColors() async {
+    final response = await dio.get('/api/colors');
+    return List<Map<String, dynamic>>.from(response.data);
+  }
+
+  // Método para registrar un vehículo
+  Future<void> createVehicle({
+    required int vehicleModelId,
+    required String vin,
+    required int colorId,
+    required bool isUrgent,
+  }) async {
+
+    try {
+      await dio.post(
+        '/api/vehicles',
+        data: {
+          'vehicle_model_id': vehicleModelId,
+          'vin': vin,
+          'color_id': colorId,
+          'is_urgent': isUrgent,
+        },
+      );
+    } catch (e) {
+      print('Error in createVehicle: $e');
+      rethrow;
+    }
+  }
+
+  // Método para escanear una imagen
+  Future<List<Map<String, dynamic>>> scanImage(String imagePath) async {
+    // Crear la data del formulario con el campo 'file'
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(
+        imagePath,
+        filename: imagePath.split('/').last, // Nombre de archivo sin ruta completa
+        contentType: MediaType('image', 'jpeg'), // Especificar tipo de contenido
+      ),
+    });
+
+    try {
+      final response = await dio.post(
+        '/api/scan',
+        data: formData,
+      );
+
+      // Revisar respuesta exitosa
+      if (response.statusCode == 200) {
+        return List<Map<String, dynamic>>.from(response.data['detected_codes']);
+      } else {
+        throw Exception('Error al escanear la imagen: ${response.statusMessage}');
+      }
+    } catch (e) {
+      throw Exception('Error en la solicitud: $e');
+    }
+  }
 
 
 }

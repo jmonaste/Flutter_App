@@ -1,12 +1,9 @@
-// lib/login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'auth_service.dart';
 import 'home_page.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
-  
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -60,31 +57,151 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    double screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Login'),
-      ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: ListView(
           children: [
-            TextField(
+            SizedBox(height: screenHeight * .12),
+            const Text(
+              'Welcome,',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: screenHeight * .01),
+            Text(
+              'Sign in to continue!',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.black.withOpacity(.6),
+              ),
+            ),
+            SizedBox(height: screenHeight * .12),
+            InputField(
               controller: _usernameController,
-              decoration: InputDecoration(labelText: 'Username'),
+              labelText: 'Username',
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              autoFocus: true,
             ),
-            TextField(
+            SizedBox(height: screenHeight * .025),
+            InputField(
               controller: _passwordController,
-              decoration: InputDecoration(labelText: 'Password'),
+              labelText: 'Password',
               obscureText: true,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (val) => _login(),
             ),
-            SizedBox(height: 20),
-            _isLoading
-                ? CircularProgressIndicator()
-                : ElevatedButton(
-                    onPressed: _login,
-                    child: Text('Login'),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {},
+                child: const Text(
+                  'Forgot Password?',
+                  style: TextStyle(
+                    color: Colors.black,
                   ),
+                ),
+              ),
+            ),
+            SizedBox(
+              height: screenHeight * .075,
+            ),
+            FormButton(
+              text: 'Log In',
+              onPressed: _login,
+            ),
+            SizedBox(
+              height: screenHeight * .15,
+            ),
+            TextButton(
+              onPressed: () {},
+              child: RichText(
+                text: const TextSpan(
+                  text: "I'm a new user, ",
+                  style: TextStyle(color: Colors.black),
+                  children: [
+                    TextSpan(
+                      text: 'Sign Up',
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class FormButton extends StatelessWidget {
+  final String text;
+  final Function? onPressed;
+  const FormButton({this.text = '', this.onPressed, Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    double screenHeight = MediaQuery.of(context).size.height;
+
+    return ElevatedButton(
+      onPressed: onPressed as void Function()?,
+      style: ElevatedButton.styleFrom(
+        padding: EdgeInsets.symmetric(vertical: screenHeight * .02),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 16),
+      ),
+    );
+  }
+}
+
+class InputField extends StatelessWidget {
+  final TextEditingController controller;
+  final String? labelText;
+  final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
+  final bool autoFocus;
+  final bool obscureText;
+  final Function(String)? onSubmitted;
+
+  const InputField({
+    required this.controller,
+    this.labelText,
+    this.keyboardType,
+    this.textInputAction,
+    this.autoFocus = false,
+    this.obscureText = false,
+    this.onSubmitted,
+    Key? key,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      autofocus: autoFocus,
+      keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      obscureText: obscureText,
+      onSubmitted: onSubmitted,
+      decoration: InputDecoration(
+        labelText: labelText,
+        floatingLabelBehavior: FloatingLabelBehavior.always,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
       ),
     );
