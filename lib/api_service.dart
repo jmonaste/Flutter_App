@@ -181,29 +181,48 @@ class ApiService {
   Future<List<Map<String, dynamic>>> getCommentsForState(int stateId) async {
     try {
       final response = await dio.get('/api/states/$stateId/comments');
-      return List<Map<String, dynamic>>.from(response.data);
+
+      // Verificar si la respuesta es una lista
+      if (response.data is List) {
+        // Convertir la respuesta en una lista de mapas
+        return List<Map<String, dynamic>>.from(response.data);
+      }
+      // Verificar si la respuesta es un mapa que contiene la clave 'detail'
+      else if (response.data is Map<String, dynamic> && response.data.containsKey('detail')) {
+        // Puedes optar por retornar una lista vacía
+        return [];
+        
+        // O, si prefieres manejarlo como un error, puedes lanzar una excepción:
+        // throw Exception(response.data['detail']);
+      }
+      // Manejar formatos de respuesta inesperados
+      else {
+        throw Exception('Formato de respuesta inesperado');
+      }
     } catch (e) {
       print('Error in getCommentsForState: $e');
-      rethrow;
+      rethrow; // Re-lanzar la excepción para que pueda ser manejada más arriba
     }
   }
 
   // Método para cambiar el estado de un vehículo
-  Future<void> changeVehicleState(int vehicleId, int newStateId, int commentId) async {
+  Future<void> changeVehicleState(int vehicleId, int newStateId, {int? commentId}) async {
     try {
+      // Construir el mapa de datos de forma condicional
+      final Map<String, dynamic> data = {
+        'new_state_id': newStateId,
+        if (commentId != null) 'comment_id': commentId,
+      };
+
       await dio.put(
         '/api/vehicles/$vehicleId/state',
-        data: {
-          'new_state_id': newStateId,
-          'comment_id': commentId,
-        },
+        data: data,
       );
     } catch (e) {
       print('Error in changeVehicleState: $e');
-      rethrow;
+      rethrow; // Re-lanzar la excepción para que pueda ser manejada más arriba
     }
   }
-
 
 
 

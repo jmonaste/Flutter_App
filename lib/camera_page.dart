@@ -410,9 +410,6 @@ class _CameraPageState extends State<CameraPage> {
           builder: (context) => HomePage(),
         ),
       );
-    } else if (index == 2) {
-      // Lógica para el botón "Cuenta"
-      // Puedes navegar a la página de cuenta aquí
     }
   }
 }

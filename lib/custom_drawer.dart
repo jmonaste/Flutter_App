@@ -1,3 +1,4 @@
+// lib/custom_drawer.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'api_service.dart';
@@ -37,13 +38,13 @@ class CustomDrawer extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Color(0xFF262626),
-        title: Text('Error', style: TextStyle(color: Color(0xFFF2CB05))),
-        content: Text(message, style: TextStyle(color: Colors.white70)),
+        backgroundColor: Colors.white,
+        title: Text('Error', style: TextStyle(color: Colors.redAccent)),
+        content: Text(message, style: TextStyle(color: Colors.black87)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('Aceptar', style: TextStyle(color: Color(0xFFA64F03))),
+            child: Text('Aceptar', style: TextStyle(color: Colors.blue)),
           ),
         ],
       ),
@@ -55,12 +56,12 @@ class CustomDrawer extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: Color(0xFF262626),
-          title: Text('Confirmar cierre de sesión', style: TextStyle(color: Color(0xFFF2CB05))),
-          content: Text('¿Seguro que quieres cerrar sesión?', style: TextStyle(color: Colors.white70)),
+          backgroundColor: Colors.white,
+          title: Text('Confirmar cierre de sesión', style: TextStyle(color: Colors.redAccent)),
+          content: Text('¿Seguro que quieres cerrar sesión?', style: TextStyle(color: Colors.black87)),
           actions: [
             TextButton(
-              child: Text('Cancelar', style: TextStyle(color: Color(0xFFA64F03))),
+              child: Text('Cancelar', style: TextStyle(color: Colors.blue)),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -81,43 +82,56 @@ class CustomDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: Color(0xFFF2F2F2),
+      // Fondo claro y limpio
+      backgroundColor: Colors.white,
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
+          // Header más minimalista
           DrawerHeader(
             decoration: BoxDecoration(
-              color: Color(0xFFA64F03),
+              color: Colors.blueGrey[50],
             ),
             child: Row(
               children: [
                 CircleAvatar(
                   radius: 30,
-                  backgroundColor: Color(0xFFF2CB05),
-                  child: Icon(Icons.person, color: Color(0xFF262626), size: 30),
+                  backgroundColor: Colors.blueGrey[200],
+                  child: Icon(Icons.person, color: Colors.white, size: 30),
                 ),
                 SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      userName,
-                      style: TextStyle(color: Colors.white, fontSize: 18),
-                    ),
-                    GestureDetector(
-                      onTap: onProfileTap,
-                      child: Text(
-                        'Ver perfil',
-                        style: TextStyle(color: Color(0xFFF2CB05), fontSize: 14),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        userName,
+                        style: TextStyle(
+                          color: Colors.black87,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                      GestureDetector(
+                        onTap: onProfileTap,
+                        child: Text(
+                          'Ver perfil',
+                          style: TextStyle(
+                            color: Colors.blueGrey,
+                            fontSize: 14,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-          Divider(color: Color(0xFFA64F03), thickness: 1),
+
           _buildDrawerItem(
             icon: Icons.home,
             text: 'Inicio',
@@ -159,11 +173,11 @@ class CustomDrawer extends StatelessWidget {
               MaterialPageRoute(builder: (context) => CameraPage()),
             ),
           ),
-          Divider(color: Color(0xFFA64F03), thickness: 1),
+          Divider(color: Colors.grey[300], thickness: 1),
           _buildDrawerItem(
             icon: Icons.logout,
             text: 'Cerrar sesión',
-            color: Colors.red,
+            color: Colors.redAccent,
             onTap: () => _showLogoutConfirmation(context),
           ),
         ],
@@ -175,12 +189,16 @@ class CustomDrawer extends StatelessWidget {
     required IconData icon,
     required String text,
     required VoidCallback onTap,
-    Color color = Colors.white,
+    Color color = Colors.black87,
   }) {
     return ListTile(
-      leading: Icon(icon, color: Color(0xFFA64F03)),
-      title: Text(text, style: TextStyle(color: Color(0xFFA64F03))),
+      leading: Icon(icon, color: Colors.blueGrey),
+      title: Text(
+        text,
+        style: TextStyle(color: color, fontSize: 16),
+      ),
       onTap: onTap,
+      contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 5),
     );
   }
 }

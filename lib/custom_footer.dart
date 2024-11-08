@@ -22,10 +22,6 @@ class CustomFooter extends StatelessWidget {
           icon: Icon(Icons.car_crash),
           label: 'Nuevo Vehiculo',
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.search),
-          label: 'Buscar',
-        ),
       ],
       currentIndex: selectedIndex,
       selectedItemColor: Color(0xFFA64F03),
