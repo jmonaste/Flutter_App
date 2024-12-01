@@ -26,14 +26,14 @@ class VehicleDetailPage extends StatefulWidget {
   const VehicleDetailPage({Key? key, required this.vehicleId}) : super(key: key);
 
   @override
-  VehicleDetailPageState createState() => VehicleDetailPageState();
+  _VehicleDetailPageState createState() => _VehicleDetailPageState();
 }
 
-class VehicleDetailPageState extends State<VehicleDetailPage> {
+class _VehicleDetailPageState extends State<VehicleDetailPage> {
+  bool _isLoading = false;
+  String _errorMessage = '';
   Map<String, dynamic>? _vehicleData;
   List<Map<String, dynamic>> _allowedTransitions = [];
-  bool _isLoading = true; // Variable para manejar el estado de carga
-  String _errorMessage = '';
 
   @override
   void initState() {
@@ -82,87 +82,23 @@ class VehicleDetailPageState extends State<VehicleDetailPage> {
 
     if (comments.isEmpty) {
       _changeVehicleState(newStateId);
-      _fetchInitialData(); // Refrescar los datos del vehículo
-      _showSuccessDialog('Estado actualizado correctamente.');
       return;
     }
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (BuildContext context) {
-        int? selectedCommentId;
-
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              backgroundColor: primaryColor, // Fondo del diálogo más claro
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(15.0), // Bordes más suaves
-              ),
-              title: Text(
-                'Seleccionar Comentario',
-                style: TextStyle(
-                  color: textColor, // Color del título
-                  fontSize: 20, // Tamaño de fuente más grande
-                  fontWeight: FontWeight.w600, // Peso de fuente más ligero
-                ),
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  children: comments.map((comment) {
-                    return RadioListTile<int>(
-                      title: Text(
-                        comment['comment'],
-                        style: TextStyle(
-                          color: optionsColor, // Color del texto de opciones
-                          fontSize: 16,
-                        ),
-                      ),
-                      value: comment['id'],
-                      groupValue: selectedCommentId,
-                      activeColor: secondaryColor2, // Color activo del radio
-                      onChanged: (int? value) {
-                        setState(() {
-                          selectedCommentId = value;
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(
-                    'Cancelar',
-                    style: TextStyle(
-                      color: textColor, // Color del texto del botón
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: secondaryColor1, // Color de fondo del botón
-                  ),
-                  onPressed: selectedCommentId == null
-                      ? null
-                      : () {
-                          Navigator.of(context).pop();
-                          _changeVehicleState(newStateId, commentId: selectedCommentId!);
-                          _showSuccessDialog('Estado actualizado correctamente.');
-                        },
-                  child: Text(
-                    'Aceptar',
-                    style: TextStyle(
-                      color: primaryColor, // Texto del botón en blanco
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ],
+      builder: (context) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: comments.map((comment) {
+            return ListTile(
+              title: Text(comment['text']),
+              onTap: () {
+                Navigator.pop(context);
+                _changeVehicleState(newStateId, commentId: comment['id']);
+              },
             );
-          },
+          }).toList(),
         );
       },
     );
@@ -170,13 +106,21 @@ class VehicleDetailPageState extends State<VehicleDetailPage> {
 
   /// Cambia el estado del vehículo
   Future<void> _changeVehicleState(int newStateId, {int? commentId}) async {
+    setState(() {
+      _isLoading = true;
+    });
+
     final apiService = Provider.of<ApiService>(context, listen: false);
 
     try {
       await apiService.changeVehicleState(widget.vehicleId, newStateId, commentId: commentId);
-      _fetchInitialData(); // Refrescar los datos del vehículo
+      _fetchInitialData();
     } catch (e) {
       _showErrorDialog('Error al cambiar el estado del vehículo.');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -184,95 +128,18 @@ class VehicleDetailPageState extends State<VehicleDetailPage> {
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: primaryColor, // Fondo más claro
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15.0),
+      builder: (context) => AlertDialog(
+        title: Text('Error'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('OK'),
           ),
-          title: Text(
-            'Error',
-            style: TextStyle(
-              color: secondaryColor1, // Color del título
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          content: Text(
-            message,
-            style: TextStyle(
-              color: textColor, // Color del contenido
-              fontSize: 16,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'OK',
-                style: TextStyle(
-                  color: secondaryColor1, // Color del texto del botón
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
-
-  /// Muestra un diálogo de éxito
-  void _showSuccessDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: primaryColor, // Fondo más claro
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15.0), // Bordes más suaves
-          ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.check_circle_outline,
-                color: Colors.green, // Icono verde para indicar éxito
-              ),
-              SizedBox(width: 10),
-              Text(
-                'Éxito',
-                style: TextStyle(
-                  color: textColor, // Color del título
-                  fontSize: 20, // Tamaño de fuente más grande
-                  fontWeight: FontWeight.w600, // Peso de fuente más ligero
-                ),
-              ),
-            ],
-          ),
-          content: Text(
-            message,
-            style: TextStyle(
-              color: textColor, // Color del contenido
-              fontSize: 16,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'OK',
-                style: TextStyle(
-                  color: secondaryColor1, // Color del texto del botón
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
 
   @override
   Widget build(BuildContext context) {
@@ -362,6 +229,22 @@ class VehicleDetailPageState extends State<VehicleDetailPage> {
                               ),
                             ),
                           ),
+                          if (_vehicleData!['is_urgent'] == true)
+                            Card(
+                              color: Color(0xFFFFF9C4), // Fondo claro para la tarjeta de urgencia
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Razón de Urgencia: ${_vehicleData!['urgency_reason']}', style: TextStyle(color: Color(0xFF262626))),
+                                    Text('Observaciones: ${_vehicleData!['observations']}', style: TextStyle(color: Color(0xFF262626))),
+                                    Text('Fecha de Entrega: ${_vehicleData!['urgency_delivery_date']}', style: TextStyle(color: Color(0xFF262626))),
+                                    Text('Hora de Entrega: ${_vehicleData!['urgency_delivery_time']}', style: TextStyle(color: Color(0xFF262626))),
+                                  ],
+                                ),
+                              ),
+                            ),
                           SizedBox(height: 20),
                           Text(
                             'Cambiar de estado',
