@@ -80,10 +80,14 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
       return;
     }
 
+    print("Antes del errro 0");
+
     if (comments.isEmpty) {
       _changeVehicleState(newStateId);
       return;
     }
+
+    print("Antes del error 1");
 
     showModalBottomSheet(
       context: context,
@@ -92,7 +96,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
           mainAxisSize: MainAxisSize.min,
           children: comments.map((comment) {
             return ListTile(
-              title: Text(comment['text']),
+              title: Text(comment['comment']),
               onTap: () {
                 Navigator.pop(context);
                 _changeVehicleState(newStateId, commentId: comment['id']);
@@ -106,6 +110,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 
   /// Cambia el estado del vehículo
   Future<void> _changeVehicleState(int newStateId, {int? commentId}) async {
+
     setState(() {
       _isLoading = true;
     });
