@@ -1,6 +1,6 @@
 // lib/auth_provider.dart
 import 'package:flutter/material.dart';
-import 'secure_storage_service.dart';
+import '../services/secure_storage_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final SecureStorageService _storageService = SecureStorageService();

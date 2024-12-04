@@ -1,10 +1,11 @@
 // lib/auth_service.dart
-import 'constants.dart'; // Importa baseUrl
+import '../constants.dart'; // Importa baseUrl
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Para almacenar el token de forma segura
 import 'dart:convert'; // Para jsonEncode y jsonDecode
 import 'package:flutter/material.dart'; // Para acceder a NavigatorState
-import 'login_screen.dart'; // Para redirigir al login
+import '../screens/login_screen.dart'; // Para redirigir al login
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   late final Dio dio;
@@ -77,6 +78,15 @@ class AuthService {
     }
   }
 
+  Future<void> clearTokens() async {
+    await _storage.delete(key: 'accessToken');
+    await _storage.delete(key: 'refreshToken');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('userName');
+  }
+
+
+
   Future<void> logout() async {
     await _storage.delete(key: 'accessToken');
     await _storage.delete(key: 'refreshToken');
@@ -106,9 +116,14 @@ class AuthService {
         ),
       );
       if (response.statusCode == 200) {
+        // Si la autenticación es exitosa, guarda el nombre del usuario
+        final prefs = await SharedPreferences.getInstance();
+
         final data = response.data;
         await _storage.write(key: 'accessToken', value: data['access_token']);
         await _storage.write(key: 'refreshToken', value: data['refresh_token']);
+        await prefs.setString('userName', username);
+
       } else {
         throw Exception('Error al iniciar sesión');
       }

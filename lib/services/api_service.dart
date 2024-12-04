@@ -1,10 +1,10 @@
 // lib/api_service.dart
-import 'constants.dart'; // Importa baseUrl
+import '../constants.dart'; // Importa baseUrl
 import 'package:dio/dio.dart';
 import 'auth_service.dart';
 import 'package:flutter/material.dart';
-import 'login_screen.dart';
-import 'main.dart'; // Para acceder al navigatorKey
+import '../screens/login_screen.dart';
+import '../main.dart'; // Para acceder al navigatorKey
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:typed_data'; // Para Uint8List
 import 'dart:io'; // Para File
@@ -285,26 +285,17 @@ class ApiService {
 
 
 
-  // Método para cerrar sesión
+  // Método de cierre de sesión
   Future<void> logout() async {
-    try {
-      final refreshToken = await _authService.getRefreshToken(); // Obtener el refresh token almacenado
+    await _authService.clearTokens();
+    _navigateToLogin();
+  }
 
-      final response = await dio.post(
-        '/logout',
-        data: {'refresh_token': refreshToken}
-        ); // Asegúrate de que este endpoint exista en tu API
-
-      if (response.statusCode == 200) {
-        // Eliminar tokens almacenados
-        await _authService.logout();
-      } else {
-        throw Exception('Error al cerrar sesión en el servidor');
-      }
-    } catch (e) {
-      print('Error en logout: $e');
-      throw Exception('Error al cerrar sesión. Por favor, inténtelo de nuevo.');
-    }
+  void _navigateToLogin() {
+    navigatorKey.currentState?.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => LoginScreen()),
+      (Route<dynamic> route) => false,
+    );
   }
 
   // Método para obtener los tipos de vehículos

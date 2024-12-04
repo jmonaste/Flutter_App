@@ -1,10 +1,10 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'auth_service.dart';
-import 'api_service.dart';
-import 'home_page.dart';
-import 'login_screen.dart';
+import 'services/auth_service.dart';
+import 'services/api_service.dart';
+import 'screens/home_page.dart';
+import 'screens/login_screen.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 

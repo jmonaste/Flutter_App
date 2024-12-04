@@ -1,14 +1,15 @@
 // lib/home_page.dart
 import 'package:flutter/material.dart';
-import 'custom_drawer.dart';
-import 'custom_footer.dart';
+import '../custom_drawer.dart';
+import '../custom_footer.dart';
 import 'camera_page.dart';
 import 'vehicle_detail_page.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'api_service.dart';
+import '../services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -27,11 +28,20 @@ class HomePageState extends State<HomePage> {
   // Variables para manejar el filtro
   bool _isFiltered = false;
   String? _currentFilterVin;
+  String userName = '';
 
   @override
   void initState() {
     super.initState();
     _fetchVehicles(); // Inicializa fetching de vehículos
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userName = prefs.getString('userName') ?? 'Nombre del usuario';
+    });
   }
 
   // Método para mostrar el diálogo de error
@@ -419,7 +429,7 @@ class HomePageState extends State<HomePage> {
         iconTheme: IconThemeData(color: Color(0xFF262626)),
       ),
       drawer: CustomDrawer(
-        userName: 'Nombre del usuario',
+        userName: 'Bienvenido, $userName',
         onProfileTap: () {
           // Lógica para ver el perfil
         },

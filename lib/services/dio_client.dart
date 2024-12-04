@@ -1,11 +1,11 @@
 // lib/dio_client.dart
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'auth_provider.dart';
-import 'main.dart';
-import 'constants.dart';
+import '../providers/auth_provider.dart';
+import '../main.dart';
+import '../constants.dart';
 import 'package:provider/provider.dart';
-import 'login_screen.dart';
+import '../screens/login_screen.dart';
 
 class DioClient {
   final Dio _dio = Dio();

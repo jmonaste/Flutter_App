@@ -1,13 +1,10 @@
 // lib/custom_drawer.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'api_service.dart';
-import 'login_screen.dart';
-import 'home_page.dart';
-import 'vehicle_type_list.dart';
-import 'manage_vehicle_models.dart';
-import 'manage_vehicle_brand.dart';
-import 'camera_page.dart';
+import 'services/api_service.dart';
+import 'screens/login_screen.dart';
+import 'screens/home_page.dart';
+import 'screens/camera_page.dart';
 
 class CustomDrawer extends StatelessWidget {
   final String userName;
@@ -24,12 +21,14 @@ class CustomDrawer extends StatelessWidget {
 
     try {
       await apiService.logout();
+      if (!context.mounted) return;
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => LoginScreen()),
         (Route<dynamic> route) => false,
       );
     } catch (e) {
+      if (!context.mounted) return;
       _showErrorDialog(context, 'No se pudo cerrar sesión. Por favor, intenta nuevamente.');
     }
   }
@@ -139,30 +138,6 @@ class CustomDrawer extends StatelessWidget {
               context,
               MaterialPageRoute(builder: (context) => HomePage()),
               (route) => false,
-            ),
-          ),
-          _buildDrawerItem(
-            icon: Icons.directions_car,
-            text: 'Tipos de vehículos',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => VehicleTypeListPage()),
-            ),
-          ),
-          _buildDrawerItem(
-            icon: Icons.business,
-            text: 'Marcas',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => ManageVehicleBrandPage()),
-            ),
-          ),
-          _buildDrawerItem(
-            icon: Icons.category,
-            text: 'Modelos',
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => ManageVehicleModelsPage()),
             ),
           ),
           _buildDrawerItem(

@@ -1,7 +1,7 @@
 // lib/vehicle_detail_page.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'api_service.dart';
+import '../services/api_service.dart';
 
 // Definición de la paleta de colores
 const Color primaryColor = Colors.white; // Fondo principal
