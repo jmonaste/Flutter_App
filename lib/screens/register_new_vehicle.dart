@@ -9,6 +9,7 @@ import 'home_page.dart';
 import 'dart:convert';  // Para usar base64Encode
 import 'dart:io';       // Para manejar archivos
 import 'package:flutter/foundation.dart'; // Para kIsWeb
+import 'vehicle_detail_page.dart';
 
 class CameraPage extends StatefulWidget {
   @override
@@ -76,14 +77,24 @@ class _CameraPageState extends State<CameraPage> {
     final apiService = Provider.of<ApiService>(context, listen: false);
 
     try {
-      await apiService.createVehicle(
+      final response = await apiService.createVehicle(
         vehicleModelId: _selectedModel!,
         vin: _vinController.text,
         colorId: _selectedColor!,
         isUrgent: _isUrgent,
       );
 
-      _showSuccessDialog('Vehículo registrado exitosamente.');
+      if (response['created'] == false) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => VehicleDetailPage(vehicleId: response['id']),
+          ),
+        );
+      } else {
+        _showSuccessDialog('Vehículo registrado exitosamente.');
+      }
+      
     } catch (e) {
       _showErrorDialog('Error al registrar el vehículo: $e');
     } finally {
@@ -92,8 +103,6 @@ class _CameraPageState extends State<CameraPage> {
       });
     }
   }
-
-
 
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
@@ -186,7 +195,6 @@ class _CameraPageState extends State<CameraPage> {
       },
     );
   }
-
 
   void _showErrorDialog(String message) {
     showDialog(

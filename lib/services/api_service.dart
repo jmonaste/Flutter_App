@@ -464,7 +464,7 @@ class ApiService {
   }
 
   // Método para registrar un vehículo
-  Future<void> createVehicle({
+  Future<Map<String, dynamic>> createVehicle({
     required int vehicleModelId,
     required String vin,
     required int colorId,
@@ -472,7 +472,7 @@ class ApiService {
   }) async {
 
     try {
-      await dio.post(
+      final response = await dio.post(
         '/api/vehicles',
         data: {
           'vehicle_model_id': vehicleModelId,
@@ -481,6 +481,7 @@ class ApiService {
           'is_urgent': isUrgent,
         },
       );
+      return response.data;
     } catch (e) {
       print('Error in createVehicle: $e');
       rethrow;

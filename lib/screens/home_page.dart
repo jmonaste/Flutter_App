@@ -53,7 +53,6 @@ class HomePageState extends State<HomePage> {
       }});
   }
 
-
   Future<void> _loadMoreVehicles() async {
     setState(() {
       _isLoadingMore = true;
@@ -94,7 +93,6 @@ class HomePageState extends State<HomePage> {
       });
     }
   }
-
 
   Future<void> _loadUserName() async {
     final prefs = await SharedPreferences.getInstance();
@@ -163,7 +161,6 @@ class HomePageState extends State<HomePage> {
       _showErrorDialog('Error al obtener los vehículos.');
     }
   }
-
 
   Widget _buildVehicleCard(Map<String, dynamic> vehicle) {
     return Container(
@@ -298,8 +295,6 @@ class HomePageState extends State<HomePage> {
     );
   }
 
-
-
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: source);
@@ -339,7 +334,6 @@ class HomePageState extends State<HomePage> {
       }
     }
   }
-
 
   void _updateVin(String vin) {
     setState(() {
