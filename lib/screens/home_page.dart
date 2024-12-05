@@ -1,7 +1,7 @@
 // lib/home_page.dart
 import 'package:flutter/material.dart';
-import '../custom_drawer.dart';
-import '../custom_footer.dart';
+import '../drawers/custom_drawer.dart';
+import '../drawers/custom_footer.dart';
 import 'register_new_vehicle.dart';
 import 'vehicle_detail_page.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
@@ -10,6 +10,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';  // Para usar base64Encode
+import 'dart:io';       // Para manejar archivos
+import 'package:flutter/foundation.dart'; // Para kIsWeb
+import 'package:flutter/material.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -294,6 +298,8 @@ class HomePageState extends State<HomePage> {
     );
   }
 
+
+
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: source);
@@ -306,7 +312,23 @@ class HomePageState extends State<HomePage> {
       final apiService = Provider.of<ApiService>(context, listen: false);
 
       try {
-        final detectedCodes = await apiService.scanImage(pickedFile.path);
+        // Leer la imagen dependiendo de la plataforma
+        late final List<int> bytes;
+
+        if (kIsWeb) {
+          // Si es Flutter Web
+          bytes = await pickedFile.readAsBytes();
+        } else {
+          // Si es Flutter Mobile (iOS o Android)
+          bytes = await File(pickedFile.path).readAsBytes();
+        }
+
+        // Convertir a base64
+        final base64Image = base64Encode(bytes);
+
+        // Llamar al servicio de API para escanear la imagen
+        final detectedCodes = await apiService.scanImage(base64Image);
+        print(base64Image);
         _showVinSelectionDialog(detectedCodes);
       } catch (e) {
         _showErrorDialog('Error al escanear la imagen: $e');
@@ -317,6 +339,7 @@ class HomePageState extends State<HomePage> {
       }
     }
   }
+
 
   void _updateVin(String vin) {
     setState(() {

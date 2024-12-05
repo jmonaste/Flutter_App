@@ -4,8 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
-import '../custom_footer.dart';
+import '../drawers/custom_footer.dart';
 import 'home_page.dart';
+import 'dart:convert';  // Para usar base64Encode
+import 'dart:io';       // Para manejar archivos
+import 'package:flutter/foundation.dart'; // Para kIsWeb
 
 class CameraPage extends StatefulWidget {
   @override
@@ -90,9 +93,11 @@ class _CameraPageState extends State<CameraPage> {
     }
   }
 
+
+
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
-    final pickedFile = await picker.getImage(source: source);
+    final pickedFile = await picker.pickImage(source: source);
 
     if (pickedFile != null) {
       setState(() {
@@ -102,7 +107,23 @@ class _CameraPageState extends State<CameraPage> {
       final apiService = Provider.of<ApiService>(context, listen: false);
 
       try {
-        final detectedCodes = await apiService.scanImage(pickedFile.path);
+        // Leer la imagen dependiendo de la plataforma
+        late final List<int> bytes;
+
+        if (kIsWeb) {
+          // Si es Flutter Web
+          bytes = await pickedFile.readAsBytes();
+        } else {
+          // Si es Flutter Mobile (iOS o Android)
+          bytes = await File(pickedFile.path).readAsBytes();
+        }
+
+        // Convertir a base64
+        final base64Image = base64Encode(bytes);
+
+        // Llamar al servicio de API para escanear la imagen
+        final detectedCodes = await apiService.scanImage(base64Image);
+        print(base64Image);
         _showVinSelectionDialog(detectedCodes);
       } catch (e) {
         _showErrorDialog('Error al escanear la imagen: $e');

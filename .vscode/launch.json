@@ -21,6 +21,16 @@
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"
-        }
+        },
+        {
+            "name": "Flutter Debug with Env",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "args": [
+              "--dart-define-from-file",
+              "env/dev.json"
+            ]
+          }
     ]
 }

@@ -488,7 +488,7 @@ class ApiService {
   }
 
   // Método para escanear una imagen
-  Future<List<Map<String, dynamic>>> scanImage(String imagePath) async {
+  Future<List<Map<String, dynamic>>> scanImage_deprecated(String imagePath) async {
     // Crear la data del formulario con el campo 'file'
     final formData = FormData.fromMap({
       'file': await MultipartFile.fromFile(
@@ -505,6 +505,36 @@ class ApiService {
       );
 
       // Revisar respuesta exitosa
+      if (response.statusCode == 200) {
+        return List<Map<String, dynamic>>.from(response.data['detected_codes']);
+      } else {
+        throw Exception('Error al escanear la imagen: ${response.statusMessage}');
+      }
+    } catch (e) {
+      throw Exception('Error en la solicitud: $e');
+    }
+  }
+
+
+  // Método para escanear una imagen codificada en base64
+  Future<List<Map<String, dynamic>>> scanImage(String base64Image) async {
+    try {
+
+      print(base64Image);
+
+
+      // Crear el JSON con la imagen en base64
+      final data = {
+        "image": base64Image,
+      };
+
+      // Hacer la solicitud POST a la API
+      final response = await dio.post(
+        '/api/scan/v2',
+        data: data,
+      );
+
+      // Revisar si la respuesta es exitosa
       if (response.statusCode == 200) {
         return List<Map<String, dynamic>>.from(response.data['detected_codes']);
       } else {

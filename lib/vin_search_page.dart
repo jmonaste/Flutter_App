@@ -8,8 +8,8 @@ import 'package:dio/dio.dart'; // Importa Dio
 import 'package:image_picker/image_picker.dart';
 import 'package:http_parser/http_parser.dart'; // Importa HttpParser si es necesario
 import 'services/api_service.dart'; // Importa ApiService
-import 'custom_drawer.dart'; // Importa CustomDrawer
-import 'custom_footer.dart'; // Importa CustomFooter
+import 'drawers/custom_drawer.dart'; // Importa CustomDrawer
+import 'drawers/custom_footer.dart'; // Importa CustomFooter
 import 'screens/home_page.dart'; // Importa HomePage para la navegación de "Inicio"
 import 'screens/register_new_vehicle.dart';
 import 'screens/vehicle_detail_page.dart'; // Importa la página de detalle del vehículo
