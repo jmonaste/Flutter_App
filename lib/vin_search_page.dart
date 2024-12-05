@@ -11,7 +11,7 @@ import 'services/api_service.dart'; // Importa ApiService
 import 'custom_drawer.dart'; // Importa CustomDrawer
 import 'custom_footer.dart'; // Importa CustomFooter
 import 'screens/home_page.dart'; // Importa HomePage para la navegación de "Inicio"
-import 'screens/camera_page.dart';
+import 'screens/register_new_vehicle.dart';
 import 'screens/vehicle_detail_page.dart'; // Importa la página de detalle del vehículo
 
 class VinSearchPage extends StatefulWidget {

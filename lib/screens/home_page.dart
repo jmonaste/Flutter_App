@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import '../custom_drawer.dart';
 import '../custom_footer.dart';
-import 'camera_page.dart';
+import 'register_new_vehicle.dart';
 import 'vehicle_detail_page.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -30,12 +30,67 @@ class HomePageState extends State<HomePage> {
   String? _currentFilterVin;
   String userName = '';
 
+
+  // Variables para para manejar el infinito scroll.
+  ScrollController _scrollController = ScrollController();
+  bool _isLoadingMore = false;
+  int _currentPage = 0;
+  int _vehiclesPerPage = 10; // Puedes cambiar el valor según necesites
+  
+
   @override
   void initState() {
     super.initState();
     _fetchVehicles(); // Inicializa fetching de vehículos
     _loadUserName();
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent && !_isLoadingMore) {
+        _loadMoreVehicles();
+      }});
   }
+
+
+  Future<void> _loadMoreVehicles() async {
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    try {
+      final apiService = Provider.of<ApiService>(context, listen: false);
+      final vehiclesData = await apiService.getVehicles(
+        skip: (_currentPage + 1) * _vehiclesPerPage,
+        limit: _vehiclesPerPage,
+      );
+
+      if (vehiclesData.isNotEmpty) {
+        setState(() {
+          _currentPage++;
+          List<Map<String, dynamic>> newVehiclesWithState = vehiclesData.map((vehicle) {
+            return {
+              'id': vehicle['id'],
+              'vin': vehicle['vin'],
+              'brand': vehicle['model']['brand']['name'],
+              'model': vehicle['model']['name'],
+              'status': vehicle['status']['name'],
+              'is_urgent': vehicle['is_urgent'],
+              'color': vehicle['color']['name'],
+              'hex_code': vehicle['color']['hex_code'],
+            };
+          }).toList();
+
+          _vehicles.addAll(newVehiclesWithState);
+        });
+      }
+    } catch (e) {
+      print('Error loading more vehicles: $e');
+      _showErrorDialog('Error al cargar más vehículos.');
+    } finally {
+      setState(() {
+        _isLoadingMore = false;
+      });
+    }
+  }
+
 
   Future<void> _loadUserName() async {
     final prefs = await SharedPreferences.getInstance();
@@ -68,13 +123,15 @@ class HomePageState extends State<HomePage> {
   Future<void> _fetchVehicles({String? vin}) async {
     try {
       final apiService = Provider.of<ApiService>(context, listen: false);
-      final vehiclesData = await apiService.getVehicles(vin: vin);
+      final vehiclesData = await apiService.getVehicles(
+        skip: 0,
+        limit: _vehiclesPerPage,
+        vin: vin,
+      );
 
-      List<Map<String, dynamic>> vehiclesWithState = [];
-
-      for (var vehicle in vehiclesData) {
-        vehiclesWithState.add({
-          'id': vehicle['id'], // Asegúrate de incluir el ID del vehículo
+      List<Map<String, dynamic>> vehiclesWithState = vehiclesData.map((vehicle) {
+        return {
+          'id': vehicle['id'],
           'vin': vehicle['vin'],
           'brand': vehicle['model']['brand']['name'],
           'model': vehicle['model']['name'],
@@ -82,11 +139,13 @@ class HomePageState extends State<HomePage> {
           'is_urgent': vehicle['is_urgent'],
           'color': vehicle['color']['name'],
           'hex_code': vehicle['color']['hex_code'],
-        });
-      }
+        };
+      }).toList();
 
       setState(() {
         _vehicles = vehiclesWithState;
+        _currentPage = 0; // Reiniciar el contador de página al hacer un nuevo fetch
+
         if (vin != null && vin.trim().isNotEmpty) {
           _isFiltered = true;
           _currentFilterVin = vin.trim();
@@ -100,6 +159,7 @@ class HomePageState extends State<HomePage> {
       _showErrorDialog('Error al obtener los vehículos.');
     }
   }
+
 
   Widget _buildVehicleCard(Map<String, dynamic> vehicle) {
     return Container(
@@ -419,6 +479,13 @@ class HomePageState extends State<HomePage> {
   }
 
   @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFFF2F2F2),
@@ -462,14 +529,15 @@ class HomePageState extends State<HomePage> {
             ),
           Expanded(
             child: _vehicles.isEmpty
-                ? Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    itemCount: _vehicles.length,
-                    itemBuilder: (context, index) {
-                      return _buildVehicleCard(_vehicles[index]);
-                    },
-                  ),
-          ),
+            ? Center(child: CircularProgressIndicator())
+            : ListView.builder(
+              controller: _scrollController,
+              itemCount: _vehicles.length,
+              itemBuilder: (context, index) {
+                return _buildVehicleCard(_vehicles[index]);
+                },
+              ),
+            ),
         ],
       ),
       floatingActionButton: FloatingActionButton(

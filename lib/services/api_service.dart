@@ -113,13 +113,13 @@ class ApiService {
   }
 
   // Método para obtener vehículos
-  Future<List<dynamic>> getVehicles({String? vin}) async {
+  Future<List<dynamic>> getVehicles({String? vin, int skip = 0, int limit = 10}) async {
     try {
       final response = await dio.get(
         '/api/vehicles',
         queryParameters: {
-          'skip': 0,
-          'limit': 20,
+          'skip': skip,
+          'limit': limit,
           'in_progress': true,
           'vin': vin ?? '',
         },
@@ -130,6 +130,7 @@ class ApiService {
       rethrow;
     }
   }
+
 
   // Método para obtener detalles de un vehículo específico
   Future<Map<String, dynamic>> getVehicleDetails(int vehicleId) async {

@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'services/api_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_page.dart';
-import 'screens/camera_page.dart';
+import 'screens/register_new_vehicle.dart';
 
 class CustomDrawer extends StatelessWidget {
   final String userName;
